@@ -60,19 +60,25 @@ protocol TrackpadControlling: AnyObject {
 // MARK: – CGEventTap Implementation
 
 /// Event types that originate from the trackpad and should be suppressed.
-private let suppressedEventMask: CGEventMask =
-    (1 << CGEventType.mouseMoved.rawValue)        |
-    (1 << CGEventType.leftMouseDown.rawValue)     |
-    (1 << CGEventType.leftMouseUp.rawValue)       |
-    (1 << CGEventType.leftMouseDragged.rawValue)  |
-    (1 << CGEventType.rightMouseDown.rawValue)    |
-    (1 << CGEventType.rightMouseUp.rawValue)      |
-    (1 << CGEventType.rightMouseDragged.rawValue) |
-    (1 << CGEventType.otherMouseDown.rawValue)    |
-    (1 << CGEventType.otherMouseUp.rawValue)      |
-    (1 << CGEventType.otherMouseDragged.rawValue) |
-    (1 << CGEventType.scrollWheel.rawValue)
-
+private func makeSuppressedEventMask() -> CGEventMask {
+    let types: [CGEventType] = [
+        .mouseMoved,
+        .leftMouseDown,
+        .leftMouseUp,
+        .leftMouseDragged,
+        .rightMouseDown,
+        .rightMouseUp,
+        .rightMouseDragged,
+        .otherMouseDown,
+        .otherMouseUp,
+        .otherMouseDragged,
+        .scrollWheel
+    ]
+    return types.reduce(CGEventMask(0)) { mask, type in
+        mask | (CGEventMask(1) << CGEventMask(type.rawValue))
+    }
+}
+private let suppressedEventMask: CGEventMask = makeSuppressedEventMask()
 final class CGEventTapController: TrackpadControlling {
 
     private(set) var state: TrackpadState = .enabled {
