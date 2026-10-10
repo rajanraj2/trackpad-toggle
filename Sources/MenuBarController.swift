@@ -47,8 +47,10 @@ final class MenuBarController {
         // ── Status header (non-clickable) ─────────────────────────────────────
         let statusItem = NSMenuItem(title: state.displayTitle, action: nil, keyEquivalent: "")
         statusItem.isEnabled = false
+        if let logo = loadSmallLogo() {
+            statusItem.image = logo
+        }
         menu.addItem(statusItem)
-
         // ── Update Notification Banner ────────────────────────────────────────
         if case .updateAvailable(let newVer, _, _, _) = UpdateManager.shared.status {
             menu.addItem(.separator())
@@ -147,6 +149,20 @@ final class MenuBarController {
         button.image?.isTemplate = true
     }
 
+    private func loadSmallLogo() -> NSImage? {
+        let icon: NSImage?
+        if let path = Bundle.main.path(forResource: "AppIcon", ofType: "icns") {
+            icon = NSImage(contentsOfFile: path)
+        } else if let path = Bundle.main.path(forResource: "AppIcon", ofType: "png") {
+            icon = NSImage(contentsOfFile: path)
+        } else {
+            icon = NSImage(named: NSImage.applicationIconName)
+        }
+        guard let img = icon else { return nil }
+        let copy = img.copy() as! NSImage
+        copy.size = NSSize(width: 16, height: 16)
+        return copy
+    }
     // MARK: – Settings window
 
     func showSettings(focusShortcut: Bool = false) {
