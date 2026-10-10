@@ -27,9 +27,15 @@ A lightweight native macOS menu-bar utility that lets you disable and re-enable 
 Install Trackpad Toggle as a native Homebrew Cask:
 
 ```bash
-# Install directly in a single command (no prior brew tap needed)
 brew install --cask rajanraj2/tap/trackpad-toggle
 ```
+
+> **First Launch / Gatekeeper Note**:  
+> Because this is a free, open-source application built without a paid Apple Developer ID certificate ($99/year), macOS may show an alert on first open: *“Apple could not verify TrackpadToggle is free of malware…”*  
+> To allow it to run (only needed once):  
+> - **Terminal (Instant)**: Run `xattr -d -r com.apple.quarantine /Applications/TrackpadToggle.app`  
+> - **System Settings**: Go to **System Settings → Privacy & Security**, scroll down to Security, and click **Open Anyway**.  
+> - **Finder**: Right-click `/Applications/TrackpadToggle.app` → select **Open** → click **Open**.  
 
 To update in the future:
 ```bash
@@ -40,7 +46,6 @@ To cleanly uninstall:
 ```bash
 brew uninstall --cask trackpad-toggle
 ```
-
 ### Option 2: macOS Disk Image (.dmg) — No Terminal Required
 
 The easiest way to install Trackpad Toggle on any Mac without terminal:
@@ -59,13 +64,13 @@ If you cloned this repository locally:
 1. In Finder, double-click **`Install.command`**.
 2. It compiles the app, copies it to `/Applications`, and starts it in your menu bar automatically.
 
-### Option 3: Automatic Startup at Login
+### Option 4: Automatic Startup at Login
 
 Once launched:
 1. Click the menu-bar icon → check **Launch at Login** (or toggle it in Settings).
 2. **Zero clicks needed going forward**: The app automatically starts in the background every time you boot or log in to your Mac.
 
-### Option 4: Build the DMG Locally
+### Option 5: Build the DMG Locally
 
 To generate the `.dmg` installer yourself:
 ```bash
