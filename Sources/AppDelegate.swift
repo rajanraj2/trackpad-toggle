@@ -45,6 +45,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             showPermissionAlert()
         }
 
+        // 6. Check for updates in background (2 seconds after launch)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
+            UpdateManager.shared.checkForUpdates(manual: false)
+        }
+
         logger.info("Startup complete. Shortcut: \(Preferences.shared.hotKeyDescription)")
     }
 
@@ -95,7 +100,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("Toggled blockCursorAndGestures to: \(!current)")
         menuBarController?.rebuildMenu()
     }
-
     @objc func grantAccessibility() {
         PermissionsManager.shared.openAccessibilitySettings()
     }
@@ -104,6 +108,91 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PermissionsManager.shared.openInputMonitoringSettings()
     }
 
+    // MARK: – In-App Updates
+
+    @objc func checkForUpdatesManual() {
+        UpdateManager.shared.checkForUpdates(manual: true)
+        var token: ((UpdateManager.UpdateStatus) -> Void)?
+        token = { [weak self] status in
+            switch status {
+            case .updateAvailable:
+                self?.promptUpdate()
+            case .upToDate(let ver):
+                let alert = NSAlert()
+                alert.messageText = "Trackpad Toggle is Up to Date"
+                alert.informativeText = "You are currently running version \(ver), which is the latest available release."
+                alert.alertStyle = .informational
+                alert.runModal()
+            case .error(let msg):
+                let alert = NSAlert()
+                alert.messageText = "Check for Updates Failed"
+                alert.informativeText = msg
+                alert.alertStyle = .warning
+                alert.runModal()
+            default:
+                break
+            }
+        }
+        UpdateManager.shared.onStatusChange = { status in
+            token?(status)
+            (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
+        }
+    }
+
+    @objc func promptUpdate() {
+        guard case .updateAvailable(let newVer, let notes, let downloadURL, let htmlURL) = UpdateManager.shared.status else {
+            return
+        }
+
+        let alert = NSAlert()
+        alert.messageText = "Trackpad Toggle v\(newVer) is Available!"
+        var info = "You are currently running v\(UpdateManager.shared.currentVersion).\n\n"
+        if let notes = notes, !notes.isEmpty {
+            info += "Release Highlights:\n\(notes.prefix(300))\n\n"
+        }
+        info += "Would you like to download and install this update automatically?"
+        alert.informativeText = info
+        alert.addButton(withTitle: "Download & Install Now")
+        alert.addButton(withTitle: "View on GitHub")
+        alert.addButton(withTitle: "Later")
+        alert.alertStyle = .informational
+
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            performAutomaticUpgrade(from: downloadURL)
+        } else if response == .alertSecondButtonReturn {
+            NSWorkspace.shared.open(htmlURL)
+        }
+    }
+
+    private func performAutomaticUpgrade(from url: URL) {
+        let progressAlert = NSAlert()
+        progressAlert.messageText = "Updating Trackpad Toggle…"
+        progressAlert.informativeText = "Downloading latest release and installing to /Applications…"
+        progressAlert.addButton(withTitle: "Cancel")
+        progressAlert.alertStyle = .informational
+
+        UpdateManager.shared.downloadAndInstallUpdate(from: url, progressHandler: { msg in
+            DispatchQueue.main.async {
+                progressAlert.informativeText = msg
+            }
+        }, completion: { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    break
+                case .failure(let error):
+                    let errorAlert = NSAlert()
+                    errorAlert.messageText = "Update Failed"
+                    errorAlert.informativeText = "Could not install update: \(error.localizedDescription)\n\nAlternatively, install via Homebrew:\nbrew upgrade --cask trackpad-toggle"
+                    errorAlert.alertStyle = .critical
+                    errorAlert.addButton(withTitle: "OK")
+                    errorAlert.runModal()
+                }
+            }
+        })
+    }
     // MARK: – Sleep / wake
 
     @objc private func systemDidWake() {

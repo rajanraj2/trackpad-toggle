@@ -296,6 +296,43 @@ test("HotKeyRegistrationResult failed isSuccess returns false") {
     let res = HotKeyRegistrationResultT.failed(-9878, "Error")
     try assert(!res.isSuccess)
 }
+
+print("\n━━━ Update Manager SemVer Comparison [AUTO] ━━━")
+
+func isVersionNewer(_ remote: String, than local: String) -> Bool {
+    let cleanRemote = remote.trimmingCharacters(in: CharacterSet(charactersIn: "vV "))
+    let cleanLocal = local.trimmingCharacters(in: CharacterSet(charactersIn: "vV "))
+    let remoteParts = cleanRemote.split(separator: ".").compactMap { Int($0) }
+    let localParts = cleanLocal.split(separator: ".").compactMap { Int($0) }
+    let count = max(remoteParts.count, localParts.count)
+    for i in 0..<count {
+        let r = i < remoteParts.count ? remoteParts[i] : 0
+        let l = i < localParts.count ? localParts[i] : 0
+        if r > l { return true }
+        if r < l { return false }
+    }
+    return false
+}
+
+test("UpdateManager detects newer minor version") {
+    try assert(isVersionNewer("1.2.0", than: "1.1.0"))
+}
+
+test("UpdateManager detects newer patch version") {
+    try assert(isVersionNewer("1.1.1", than: "1.1.0"))
+}
+
+test("UpdateManager detects newer major version with v prefix") {
+    try assert(isVersionNewer("v2.0.0", than: "1.1.0"))
+}
+
+test("UpdateManager reports equal version as not newer") {
+    try assert(!isVersionNewer("1.1.0", than: "1.1.0"))
+}
+
+test("UpdateManager reports older version as not newer") {
+    try assert(!isVersionNewer("1.0.5", than: "1.1.0"))
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Manual verification checklist (not executed here — printed for human runner)
 // ─────────────────────────────────────────────────────────────────────────────

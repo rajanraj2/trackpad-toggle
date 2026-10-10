@@ -34,6 +34,7 @@ SWIFT_SOURCES=(
   "$SRC/TrackpadState.swift"
   "$SRC/Preferences.swift"
   "$SRC/LaunchAtLoginManager.swift"
+  "$SRC/UpdateManager.swift"
   "$SRC/PermissionsManager.swift"
   "$SRC/TrackpadController.swift"
   "$SRC/HotKeyManager.swift"
