@@ -18,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("TrackpadToggle launched — macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
 
+        // 0. Enforce single instance: terminate any older running instances
+        enforceSingleInstance()
+
         // 1. Build the trackpad controller.
         trackpadController = CGEventTapController()
 
@@ -162,41 +165,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
-            performAutomaticUpgrade(from: downloadURL)
+            performAutomaticUpgrade(from: downloadURL, targetVersion: newVer)
         } else if response == .alertSecondButtonReturn {
             NSWorkspace.shared.open(htmlURL)
         }
     }
 
-    private func performAutomaticUpgrade(from url: URL) {
+    private func performAutomaticUpgrade(from url: URL, targetVersion: String) {
         let progressAlert = NSAlert()
         if let icon = loadAppIcon() { progressAlert.icon = icon }
         progressAlert.informativeText = "Downloading latest release and installing to /Applications…"
         progressAlert.addButton(withTitle: "Cancel")
         progressAlert.alertStyle = .informational
 
-        UpdateManager.shared.downloadAndInstallUpdate(from: url, progressHandler: { msg in
-            DispatchQueue.main.async {
-                progressAlert.informativeText = msg
-            }
-        }, completion: { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    break
-                case .failure(let error):
-                    let errorAlert = NSAlert()
-                    errorAlert.messageText = "Update Failed"
-                    errorAlert.informativeText = "Could not install update: \(error.localizedDescription)\n\nAlternatively, install via Homebrew:\nbrew upgrade --cask trackpad-toggle"
-                    errorAlert.alertStyle = .critical
-                    errorAlert.addButton(withTitle: "OK")
-                    errorAlert.runModal()
+        UpdateManager.shared.downloadAndInstallUpdate(
+            from: url,
+            targetVersion: targetVersion,
+            progressHandler: { msg in
+                DispatchQueue.main.async {
+                    progressAlert.informativeText = msg
+                }
+            },
+            completion: { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        break
+                    case .failure(let error):
+                        let errorAlert = NSAlert()
+                        errorAlert.messageText = "Update Failed"
+                        errorAlert.informativeText = "Could not install update: \(error.localizedDescription)\n\nAlternatively, install via Homebrew:\nbrew upgrade --cask trackpad-toggle"
+                        errorAlert.alertStyle = .critical
+                        errorAlert.addButton(withTitle: "OK")
+                        errorAlert.runModal()
+                    }
                 }
             }
-        })
+        )
     }
-    // MARK: – Sleep / wake
 
+    // MARK: – Single Instance Enforcement
+
+    /// Ensures that only a single instance of Trackpad Toggle runs on the system.
+    /// If an older version or another instance is running, terminates it immediately.
+    private func enforceSingleInstance() {
+        let currentPID = ProcessInfo.processInfo.processIdentifier
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.powertools.trackpadtoggle"
+        let instances = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+        for app in instances where app.processIdentifier != currentPID {
+            logger.info("Found other running instance PID \(app.processIdentifier). Terminating…")
+            app.terminate()
+        }
+    }
+
+    // MARK: – Sleep / wake
     @objc private func systemDidWake() {
         // After sleep+wake the OS may disable the event tap. If we're supposed to be
         // in the disabled state, reinstall it.
