@@ -61,6 +61,21 @@ swiftc \
 
 echo "▶  Copying resources…"
 cp "$RES/Info.plist" "$CONTENTS/Info.plist"
+
+# Inject accurate version into Info.plist (from APP_VERSION or latest git tag)
+APP_VER="${APP_VERSION:-}"
+if [[ -z "$APP_VER" ]]; then
+  git fetch --tags 2>/dev/null || true
+  GIT_TAG="$(git tag -l 'v*' 2>/dev/null | sort -V | tail -1 || true)"
+  if [[ -n "$GIT_TAG" ]]; then
+    APP_VER="${GIT_TAG#v}"
+  fi
+fi
+if [[ -n "$APP_VER" ]]; then
+  echo "▶  Setting CFBundleShortVersionString in Info.plist to $APP_VER"
+  plutil -replace CFBundleShortVersionString -string "$APP_VER" "$CONTENTS/Info.plist"
+fi
+
 if [[ -f "$RES/AppIcon.icns" ]]; then
   cp "$RES/AppIcon.icns" "$CONTENTS/Resources/AppIcon.icns"
 fi

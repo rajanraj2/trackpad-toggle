@@ -10,6 +10,7 @@ private enum PrefKey {
     static let hotKeyMods              = "hotKeyMods"
     static let launchAtLogin           = "launchAtLogin"
     static let blockCursorAndGestures  = "blockCursorAndGestures"
+    static let showMenuBarIcon         = "showMenuBarIcon"
 }
 
 /// Default shortcut: Control + Option + Command + T  (kVK_ANSI_T = 0x11)
@@ -62,6 +63,18 @@ final class Preferences {
             UserDefaults.standard.set(newValue, forKey: PrefKey.blockCursorAndGestures)
         }
     }
+    // MARK: – Menu Bar Visibility
+    var showMenuBarIcon: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: PrefKey.showMenuBarIcon) == nil {
+                return true // default: visible in menu bar
+            }
+            return UserDefaults.standard.bool(forKey: PrefKey.showMenuBarIcon)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: PrefKey.showMenuBarIcon)
+        }
+    }
 
     // MARK: – Reset
 
@@ -69,6 +82,7 @@ final class Preferences {
         UserDefaults.standard.removeObject(forKey: PrefKey.hotKeyCode)
         UserDefaults.standard.removeObject(forKey: PrefKey.hotKeyMods)
         UserDefaults.standard.removeObject(forKey: PrefKey.blockCursorAndGestures)
+        UserDefaults.standard.removeObject(forKey: PrefKey.showMenuBarIcon)
     }
 
     // MARK: – Presets

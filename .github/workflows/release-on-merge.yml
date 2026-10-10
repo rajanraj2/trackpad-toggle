@@ -110,8 +110,7 @@ jobs:
       - name: Build Application and Package DMG
         run: |
           chmod +x build.sh scripts/create_dmg.sh
-          bash build.sh --dmg
-
+          APP_VERSION="${{ steps.semver.outputs.new_version }}" bash build.sh --dmg
       - name: Push Git Tag
         run: |
           git config user.name "github-actions[bot]"

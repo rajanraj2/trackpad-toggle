@@ -53,9 +53,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             UpdateManager.shared.checkForUpdates(manual: false)
         }
 
+        // 7. If menu bar icon is hidden, open Settings window so user has interface
+        if !Preferences.shared.showMenuBarIcon {
+            openSettings()
+        }
+
         logger.info("Startup complete. Shortcut: \(Preferences.shared.hotKeyDescription)")
     }
 
+    // MARK: – Application Reopen (From Applications, Launchpad, Spotlight)
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        openSettings()
+        return true
+    }
     // MARK: – Termination
 
     func applicationWillTerminate(_ notification: Notification) {

@@ -110,9 +110,9 @@ Without both, the app runs but cannot block trackpad events. A warning banner ap
 | Toggle Block Cursor & Gestures | Click menu bar → **Block Cursor & Gestures** (checkmark) or in **Settings…** |
 | Change shortcut key | Click menu bar → **Change Shortcut…** or open **Settings…** |
 | Enable/disable startup at login | Click menu bar → **Launch at Login** (checkmark toggle) or in **Settings…** |
-| Open Settings | Click menu bar → Settings… or press **⌘,** |
+| Hide/show menu bar icon | Toggle **Show icon in menu bar** in **Settings…** |
+| Open Settings | Click menu bar → Settings… or press **⌘,** (or launch from Spotlight if icon is hidden) |
 | Quit | Click menu bar → Quit, or press **⌘Q** in Settings |
-
 ### Configurable Trackpad Suppression (Block Cursor & Gestures)
 
 You can configure the exact level of trackpad suppression to suit your workflow:
@@ -155,23 +155,32 @@ This uses the modern macOS `SMAppService.mainApp` Login Items API with a standar
 
 Trackpad Toggle checks for updates automatically via the GitHub Releases API:
 
-- **Menu Bar Notification**: When a new version is released on GitHub, a prominent menu item appears:  
-  `⭐️ Update Available: vX.Y.Z (Click to Upgrade)`
-- **1-Click Automatic In-Place Upgrade**:
-  Clicking the update item presents an interactive prompt. Selecting **Download & Install Now** automatically:
-  1. Downloads the latest `.dmg` release.
+- **When Up to Date**: The menu bar cleanly displays:  
+  `Trackpad Toggle vX.Y.Z (Latest)` with a checkmark. No update button or prompt is shown.
+- **When an Update Is Available**: The exact same line dynamically updates to show:  
+  `v1.2.0 → v1.2.3 (Click to Update)`  
+  Clicking it opens the update prompt. Selecting **Download & Install Now** automatically:
+  1. Downloads the latest release asset.
   2. Replaces `/Applications/TrackpadToggle.app` in place.
-  3. Strips Gatekeeper quarantine attributes so it opens seamlessly.
-  4. Automatically relaunches the updated version into the menu bar.
-- **Manual Check**: You can also click **Check for Updates…** in the menu bar at any time to verify your version.
+  3. Synchronizes Homebrew Caskroom metadata so `brew list --cask --versions` is 100% in sync.
+  4. Strips Gatekeeper quarantine attributes.
+  5. Relaunches the updated version.
+  6. **Once updated, the update text immediately disappears**, and the menu bar cleanly displays the new version as `(Latest)`.
 
+### Menu Bar Icon Visibility & Running in the Background
+
+You can completely hide the Trackpad Toggle icon from your menu bar:
+
+- Open **Settings…** → under **Menu Bar Appearance**, toggle off **Show icon in menu bar**.
+- The app continues running silently in the background with zero menu bar clutter. Your global shortcut (`⌃⌥⌘T`) works at all times.
+- **How to reopen Settings when hidden**: Simply open **Trackpad Toggle** from Spotlight (`⌘ + Space`), Launchpad, or the Applications folder. The Settings window will open automatically.
 ## Running Automated Tests
 
 ```bash
 swift Tests/TrackpadToggleTests.swift
 ```
 
-No permissions or hardware required. Tests cover state transitions, permission-failure paths, shortcut updates, presets, startup/login persistence, and update version comparisons. Expected output ends with `PASS` (28/28 tests passing).
+No permissions or hardware required. Tests cover state transitions, permission-failure paths, shortcut updates, presets, startup/login persistence, and update version comparisons. Expected output ends with `PASS` (34/34 tests passing).
 ## Architecture
 
 ```
