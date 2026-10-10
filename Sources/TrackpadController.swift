@@ -55,6 +55,8 @@ protocol TrackpadControlling: AnyObject {
     func enable()
     /// Toggle between enabled and disabled.
     func toggle() throws
+    /// Updates cursor association dynamically if mode changes while disabled.
+    func updateSuppressionMode()
 }
 
 // MARK: – CGEventTap Implementation
@@ -100,21 +102,33 @@ final class CGEventTapController: TrackpadControlling {
 
     /// The installed mach port backing the CGEventTap.
     private var tapPort: CFMachPort?
-    /// The run loop source that feeds events into our callback.
     private var tapSource: CFRunLoopSource?
+    private(set) var lockedCursorPosition: CGPoint = .zero
 
     // MARK: – Public interface
 
     func enable() {
         removeTap()
+        // Reconnect hardware mouse movement to on-screen cursor
+        CGAssociateMouseAndMouseCursorPosition(1)
         state = .enabled
-        logger.info("Trackpad enabled (event tap removed)")
+        logger.info("Trackpad enabled (event tap removed, cursor re-associated)")
     }
 
     func disable() throws {
         state = .transitioning
         do {
             try installTap()
+
+            if Preferences.shared.blockCursorAndGestures {
+                // Disconnect mouse movement from on-screen cursor and freeze cursor in place
+                let currentPos = CGEvent(source: nil)?.location ?? .zero
+                self.lockedCursorPosition = currentPos
+                CGAssociateMouseAndMouseCursorPosition(0)
+                CGWarpMouseCursorPosition(currentPos)
+                logger.info("Cursor frozen at \(String(describing: currentPos))")
+            }
+
             state = .disabled
             logger.info("Trackpad disabled (event tap installed)")
         } catch {
@@ -123,13 +137,27 @@ final class CGEventTapController: TrackpadControlling {
         }
     }
 
+    func updateSuppressionMode() {
+        guard state == .disabled else { return }
+        if Preferences.shared.blockCursorAndGestures {
+            let currentPos = CGEvent(source: nil)?.location ?? .zero
+            self.lockedCursorPosition = currentPos
+            CGAssociateMouseAndMouseCursorPosition(0)
+            CGWarpMouseCursorPosition(currentPos)
+            logger.info("Suppression mode updated: cursor frozen at \(String(describing: currentPos))")
+        } else {
+            CGAssociateMouseAndMouseCursorPosition(1)
+            logger.info("Suppression mode updated: cursor movement allowed")
+        }
+    }
+
     func toggle() throws {
         switch state {
         case .enabled:             try disable()
         case .disabled:            enable()
-        case .transitioning:       break   // ignore rapid keypresses mid-transition
+        case .transitioning:       break
         case .permissionRequired:  throw TrackpadError.permissionRequired
-        case .failed:              try disable()   // retry after failure
+        case .failed:              try disable()
         case .unsupported:         throw TrackpadError.unsupported
         }
     }
@@ -189,7 +217,10 @@ final class CGEventTapController: TrackpadControlling {
         }
     }
 
-    deinit { removeTap() }
+    deinit {
+        removeTap()
+        CGAssociateMouseAndMouseCursorPosition(1)
+    }
 }
 
 // MARK: – C-level callback (cannot be a closure capturing self)
@@ -214,12 +245,12 @@ private func eventTapCallback(
     // ── Suppression logic based on user configuration ────────────────────────
     //
     // When blockCursorAndGestures is enabled (default):
-    // Completely drops ALL trackpad events in the mask.
+    // Completely drops ALL trackpad events in the mask and locks cursor sprite.
     // Cursor will NOT move, gestures will NOT work, clicks & scrolls will NOT work.
     if Preferences.shared.blockCursorAndGestures {
+        CGWarpMouseCursorPosition(controller.lockedCursorPosition)
         return nil
     }
-
     // Partial / Standard mode (when user explicitly unchecks blockCursorAndGestures):
     // Cursor movement is permitted through.
     if type == .mouseMoved {

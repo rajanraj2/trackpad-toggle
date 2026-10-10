@@ -77,13 +77,17 @@ final class MockTrackpadController {
         state = .disabled
         if state != old { onStateChange?(state) }
     }
-
     func toggle() throws {
         switch state {
         case .enabled:  try disable()
         case .disabled: enable()
         default: break
         }
+    }
+
+    var updateSuppressionModeCallCount = 0
+    func updateSuppressionMode() {
+        updateSuppressionModeCallCount += 1
     }
 
     enum MockError: Error { case permissionRequired, general }
@@ -280,7 +284,12 @@ test("suppressed event mask contains gesture event types") {
         try assert((mask & bit) != 0, "Missing bit for event rawValue \(val)")
     }
 }
-print("\n━━━ HotKey Registration & Conflict Detection [AUTO] ━━━")
+
+test("MockTrackpadController updateSuppressionMode increments count") {
+    let ctrl = MockTrackpadController()
+    ctrl.updateSuppressionMode()
+    try assert(ctrl.updateSuppressionModeCallCount == 1)
+}
 
 test("HotKeyRegistrationResult success isSuccess returns true") {
     let res = HotKeyRegistrationResultT.success

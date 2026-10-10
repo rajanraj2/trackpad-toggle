@@ -56,8 +56,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: – Termination
 
     func applicationWillTerminate(_ notification: Notification) {
-        // Ensure the trackpad is always re-enabled on exit.
-        // CGEventTapController.deinit already removes the tap, but being explicit is safer.
+        // Ensure trackpad and cursor are always re-enabled and reconnected on exit.
+        CGAssociateMouseAndMouseCursorPosition(1)
         if trackpadController.state == .disabled {
             trackpadController.enable()
             logger.info("Trackpad re-enabled on app exit")
@@ -97,6 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func toggleBlockCursorAndGestures() {
         let current = Preferences.shared.blockCursorAndGestures
         Preferences.shared.blockCursorAndGestures = !current
+        trackpadController.updateSuppressionMode()
         logger.info("Toggled blockCursorAndGestures to: \(!current)")
         menuBarController?.rebuildMenu()
     }
