@@ -146,6 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let alert = NSAlert()
         alert.messageText = "Trackpad Toggle v\(newVer) is Available!"
+        if let icon = loadAppIcon() { alert.icon = icon }
         var info = "You are currently running v\(UpdateManager.shared.currentVersion).\n\n"
         if let notes = notes, !notes.isEmpty {
             info += "Release Highlights:\n\(notes.prefix(300))\n\n"
@@ -168,7 +169,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func performAutomaticUpgrade(from url: URL) {
         let progressAlert = NSAlert()
-        progressAlert.messageText = "Updating Trackpad Toggle…"
+        if let icon = loadAppIcon() { progressAlert.icon = icon }
         progressAlert.informativeText = "Downloading latest release and installing to /Applications…"
         progressAlert.addButton(withTitle: "Cancel")
         progressAlert.alertStyle = .informational
@@ -212,7 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showPermissionAlert() {
         let alert = NSAlert()
-        alert.messageText = "Accessibility Permission Required"
+        if let icon = loadAppIcon() { alert.icon = icon }
         alert.informativeText = """
             Trackpad Toggle needs Accessibility access to intercept trackpad input.
 
@@ -238,7 +239,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showInputMonitoringAlert() {
         let alert = NSAlert()
-        alert.messageText = "Input Monitoring Permission Required"
+        if let icon = loadAppIcon() { alert.icon = icon }
         alert.informativeText = """
             Input Monitoring permission is required to suppress trackpad events.
 
@@ -261,10 +262,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showErrorAlert(message: String) {
         let alert = NSAlert()
-        alert.messageText = "Trackpad Toggle Error"
+        if let icon = loadAppIcon() { alert.icon = icon }
         alert.informativeText = message
         alert.alertStyle = .critical
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
+    }
+
+    private func loadAppIcon() -> NSImage? {
+        if let path = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
+           let img = NSImage(contentsOfFile: path) {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: "AppIcon", ofType: "png"),
+           let img = NSImage(contentsOfFile: path) {
+            return img
+        }
+        return NSImage(named: NSImage.applicationIconName)
     }
 }
