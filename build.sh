@@ -33,6 +33,7 @@ mkdir -p "$MACOS" "$CONTENTS/Resources"
 SWIFT_SOURCES=(
   "$SRC/TrackpadState.swift"
   "$SRC/Preferences.swift"
+  "$SRC/LaunchAtLoginManager.swift"
   "$SRC/PermissionsManager.swift"
   "$SRC/TrackpadController.swift"
   "$SRC/HotKeyManager.swift"
@@ -41,7 +42,6 @@ SWIFT_SOURCES=(
   "$SRC/AppDelegate.swift"
   "$SRC/main.swift"
 )
-
 echo "▶  Compiling Swift sources…"
 swiftc \
   -sdk "$SDK" \
@@ -54,6 +54,7 @@ swiftc \
   -framework IOKit \
   -framework CoreFoundation \
   -framework SwiftUI \
+  -framework ServiceManagement \
   "${SWIFT_SOURCES[@]}" \
   -o "$MACOS/TrackpadToggle"
 

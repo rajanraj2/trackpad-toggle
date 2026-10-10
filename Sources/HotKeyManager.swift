@@ -26,12 +26,35 @@ private let kHotKeyEventKind: UInt32  = UInt32(kEventHotKeyPressed)
 /// Unique Carbon hot key ID used to correlate press events back to our registration.
 private let kHotKeyID: UInt32 = 1
 
+enum HotKeyRegistrationResult: Equatable {
+    case success
+    case conflict(String)
+    case failed(OSStatus, String)
+
+    var isSuccess: Bool {
+        if case .success = self { return true }
+        return false
+    }
+
+    var message: String {
+        switch self {
+        case .success:
+            return "Shortcut registered successfully."
+        case .conflict(let msg):
+            return msg
+        case .failed(let code, let msg):
+            return "Failed to register shortcut (OSStatus \(code)): \(msg)"
+        }
+    }
+}
+
 final class HotKeyManager {
     static let shared = HotKeyManager()
     private init() {}
 
     /// Called when the registered hotkey fires.
     var onHotKey: (() -> Void)?
+    private(set) var lastResult: HotKeyRegistrationResult = .success
 
     private var hotKeyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
@@ -40,7 +63,8 @@ final class HotKeyManager {
 
     /// Registers the configured shortcut as a Carbon EventHotKey.
     /// Call again after the user changes their preferred shortcut.
-    func register() {
+    @discardableResult
+    func register() -> HotKeyRegistrationResult {
         unregister()
 
         let code  = Preferences.shared.hotKeyCode
@@ -62,9 +86,19 @@ final class HotKeyManager {
         )
         if status == noErr {
             hotKeyRef = hkRef
+            lastResult = .success
             logger.info("Hot key registered: code=\(code) mods=\(mods) → \(Preferences.shared.hotKeyDescription)")
+            return .success
+        } else if status == -9878 /* eventHotKeyExistsErr */ {
+            let res = HotKeyRegistrationResult.conflict("This shortcut is already reserved by macOS or another application.")
+            lastResult = res
+            logger.error("RegisterEventHotKey conflict: OSStatus=\(status)")
+            return res
         } else {
+            let res = HotKeyRegistrationResult.failed(status, "System error \(status).")
+            lastResult = res
             logger.error("RegisterEventHotKey failed: OSStatus=\(status)")
+            return res
         }
     }
 

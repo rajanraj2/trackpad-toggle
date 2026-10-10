@@ -42,6 +42,12 @@ final class Preferences {
         carbonModsToString(hotKeyModifiers) + carbonKeyCodeToString(hotKeyCode)
     }
 
+    // MARK: – Launch at Login
+    var launchAtLogin: Bool {
+        get { UserDefaults.standard.bool(forKey: PrefKey.launchAtLogin) }
+        set { UserDefaults.standard.set(newValue, forKey: PrefKey.launchAtLogin) }
+    }
+
     // MARK: – Reset
 
     func resetToDefaults() {
@@ -49,6 +55,23 @@ final class Preferences {
         UserDefaults.standard.removeObject(forKey: PrefKey.hotKeyMods)
     }
 
+    // MARK: – Presets
+
+    struct ShortcutPreset: Identifiable, Hashable {
+        let id = UUID()
+        let title: String
+        let keyCode: UInt32
+        let modifiers: UInt32
+        let display: String
+    }
+
+    static let presets: [ShortcutPreset] = [
+        ShortcutPreset(title: "Default", keyCode: 0x11, modifiers: UInt32(cmdKey | optionKey | controlKey), display: "⌃⌥⌘T"),
+        ShortcutPreset(title: "Ctrl + Opt + T", keyCode: 0x11, modifiers: UInt32(controlKey | optionKey), display: "⌃⌥T"),
+        ShortcutPreset(title: "Opt + Cmd + T", keyCode: 0x11, modifiers: UInt32(optionKey | cmdKey), display: "⌥⌘T"),
+        ShortcutPreset(title: "Ctrl + Cmd + T", keyCode: 0x11, modifiers: UInt32(controlKey | cmdKey), display: "⌃⌘T"),
+        ShortcutPreset(title: "Fn Key F6", keyCode: 0x61, modifiers: 0, display: "F6")
+    ]
     // MARK: – Helpers
 
     private func carbonModsToString(_ mods: UInt32) -> String {

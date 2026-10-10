@@ -79,6 +79,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBarController?.showSettings()
     }
 
+    @objc func changeShortcut() {
+        menuBarController?.showSettings(focusShortcut: true)
+    }
+
+    @objc func toggleLaunchAtLogin() {
+        let current = LaunchAtLoginManager.shared.isEnabled
+        _ = LaunchAtLoginManager.shared.setLaunchAtLogin(!current)
+        menuBarController?.rebuildMenu()
+    }
     @objc func grantAccessibility() {
         PermissionsManager.shared.openAccessibilitySettings()
     }

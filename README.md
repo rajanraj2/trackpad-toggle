@@ -37,8 +37,32 @@ Without both, the app runs but cannot block trackpad events. A warning banner ap
 | Action | How |
 |---|---|
 | Toggle trackpad on/off | Press **⌃⌥⌘T** (default) or click the menu-bar icon |
-| Open Settings | Click menu bar → Settings… or **⌃⌥⌘,** |
-| Quit | Click menu bar → Quit, or **⌃⌥⌘Q** |
+| Change shortcut key | Click menu bar → **Change Shortcut…** or open **Settings…** |
+| Enable/disable startup at login | Click menu bar → **Launch at Login** (checkmark toggle) or in **Settings…** |
+| Open Settings | Click menu bar → Settings… or press **⌘,** |
+| Quit | Click menu bar → Quit, or press **⌘Q** in Settings |
+
+### Setting & Updating Shortcut Key
+
+You can customize the global toggle shortcut at any time:
+
+1. Click the menu-bar icon and select **Change Shortcut…** (or open **Settings…**).
+2. Click **Change Shortcut…** to enter recording mode.
+3. Press your desired key combination with modifiers (e.g. `⌃⌥T`, `⌥⌘T`, `⌃⌘T`, or `F6`).
+4. Press **Esc** to cancel without making changes.
+5. Alternatively, click any of the **Quick Presets** (`⌃⌥⌘T`, `⌃⌥T`, `⌥⌘T`, `⌃⌘T`, `F6`) for 1-click switching.
+6. If another app conflicts with your shortcut, the app warns you inline with an error badge.
+
+The shortcut uses **Carbon `RegisterEventHotKey`**, so it works globally regardless of focused window, requires no Accessibility permission, and continues to fire when the trackpad is disabled.
+
+### Automatic Startup at Login
+
+You can have Trackpad Toggle start automatically when you log in:
+
+- **From the Menu Bar**: Click the menu-bar icon → toggle **Launch at Login** (shows a checkmark `✓` when enabled).
+- **From Settings**: Toggle **Start automatically at login**.
+
+This uses the modern macOS `SMAppService.mainApp` Login Items API with a standard `~/Library/LaunchAgents` fallback, ensuring it starts seamlessly as a background menu-bar accessory.
 
 ## Running Automated Tests
 
@@ -46,21 +70,22 @@ Without both, the app runs but cannot block trackpad events. A warning banner ap
 swift Tests/TrackpadToggleTests.swift
 ```
 
-No permissions or hardware required. Tests cover state transitions, permission-failure paths, and preferences. Expected output ends with `PASS`.
+No permissions or hardware required. Tests cover state transitions, permission-failure paths, shortcut updates, presets, and startup/login persistence. Expected output ends with `PASS` (20/20 tests passing).
 
 ## Architecture
 
 ```
 Sources/
-├── main.swift                  — NSApplication bootstrap
-├── AppDelegate.swift           — coordinator, wires all components
-├── TrackpadState.swift         — explicit state enum (enabled/disabled/transitioning/…)
-├── TrackpadController.swift    — protocol + CGEventTapController implementation
-├── HotKeyManager.swift         — Carbon RegisterEventHotKey shortcut engine
-├── PermissionsManager.swift    — Accessibility + Input Monitoring TCC checks
-├── Preferences.swift           — UserDefaults wrapper (hotkey code/mods)
-├── MenuBarController.swift     — NSStatusItem + dynamic NSMenu
-└── SettingsWindowController.swift — SwiftUI settings + shortcut recorder
+├── main.swift                     — NSApplication bootstrap
+├── AppDelegate.swift              — coordinator, sleep/wake, permission alerts, menu actions
+├── TrackpadState.swift            — explicit state enum (enabled/disabled/transitioning/…)
+├── TrackpadController.swift       — protocol + CGEventTapController implementation
+├── HotKeyManager.swift            — Carbon RegisterEventHotKey engine + conflict detection
+├── LaunchAtLoginManager.swift     — SMAppService & LaunchAgent startup management
+├── PermissionsManager.swift       — Accessibility + Input Monitoring TCC checks
+├── Preferences.swift              — UserDefaults wrapper, shortcut presets & persistence
+├── MenuBarController.swift        — NSStatusItem + dynamic NSMenu with quick toggles
+└── SettingsWindowController.swift — SwiftUI settings, shortcut recorder & startup controls
 ```
 
 ## Trackpad Control Mechanism

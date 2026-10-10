@@ -91,12 +91,25 @@ final class MockTrackpadController {
 
 // Simple Preferences mirror (in-memory, no UserDefaults)
 struct PreferencesT {
-    var hotKeyCode: UInt32     = 0x11
+    var hotKeyCode: UInt32      = 0x11
     var hotKeyModifiers: UInt32 = 0x0B00 // cmd+opt+ctrl
+    var launchAtLogin: Bool     = false
 
     mutating func resetToDefaults() {
         hotKeyCode      = 0x11
         hotKeyModifiers = 0x0B00
+        launchAtLogin   = false
+    }
+}
+
+enum HotKeyRegistrationResultT: Equatable {
+    case success
+    case conflict(String)
+    case failed(Int32, String)
+
+    var isSuccess: Bool {
+        if case .success = self { return true }
+        return false
     }
 }
 
@@ -224,6 +237,40 @@ test("custom hotKeyCode is retained between reads") {
     try assert(p.hotKeyCode == 0x2D)
 }
 
+test("launchAtLogin default is false and can be enabled") {
+    var p = PreferencesT()
+    try assert(!p.launchAtLogin)
+    p.launchAtLogin = true
+    try assert(p.launchAtLogin)
+    p.resetToDefaults()
+    try assert(!p.launchAtLogin)
+}
+
+test("hotkey shortcut update persists new modifiers and code") {
+    var p = PreferencesT()
+    // Change to Option + Command + T
+    p.hotKeyCode = 0x11
+    p.hotKeyModifiers = 0x0900
+    try assert(p.hotKeyCode == 0x11)
+    try assert(p.hotKeyModifiers == 0x0900)
+}
+
+print("\n━━━ HotKey Registration & Conflict Detection [AUTO] ━━━")
+
+test("HotKeyRegistrationResult success isSuccess returns true") {
+    let res = HotKeyRegistrationResultT.success
+    try assert(res.isSuccess)
+}
+
+test("HotKeyRegistrationResult conflict isSuccess returns false") {
+    let res = HotKeyRegistrationResultT.conflict("In use by another app")
+    try assert(!res.isSuccess)
+}
+
+test("HotKeyRegistrationResult failed isSuccess returns false") {
+    let res = HotKeyRegistrationResultT.failed(-9878, "Error")
+    try assert(!res.isSuccess)
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Manual verification checklist (not executed here — printed for human runner)
 // ─────────────────────────────────────────────────────────────────────────────

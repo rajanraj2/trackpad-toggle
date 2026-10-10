@@ -75,6 +75,21 @@ final class MenuBarController {
                                     keyEquivalent: "")
         toggleItem.target = NSApp.delegate
         menu.addItem(toggleItem)
+        menu.addItem(.separator())
+
+        // ── Direct Quick Actions: Shortcut & Startup ──────────────────────────
+        let changeShortcutItem = NSMenuItem(title: "Change Shortcut…",
+                                            action: #selector(AppDelegate.changeShortcut),
+                                            keyEquivalent: "")
+        changeShortcutItem.target = NSApp.delegate
+        menu.addItem(changeShortcutItem)
+
+        let launchAtLoginItem = NSMenuItem(title: "Launch at Login",
+                                           action: #selector(AppDelegate.toggleLaunchAtLogin),
+                                           keyEquivalent: "")
+        launchAtLoginItem.target = NSApp.delegate
+        launchAtLoginItem.state = LaunchAtLoginManager.shared.isEnabled ? .on : .off
+        menu.addItem(launchAtLoginItem)
 
         menu.addItem(.separator())
 
@@ -106,9 +121,12 @@ final class MenuBarController {
 
     // MARK: – Settings window
 
-    func showSettings() {
+    func showSettings(focusShortcut: Bool = false) {
         if settingsWC == nil {
             settingsWC = SettingsWindowController()
+        }
+        if focusShortcut {
+            settingsWC?.startRecordingShortcut()
         }
         settingsWC?.showWindow(nil)
         settingsWC?.window?.makeKeyAndOrderFront(nil)

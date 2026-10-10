@@ -1,24 +1,27 @@
 // SettingsWindowController.swift
-// A compact NSWindow with SwiftUI content showing:
-//   • Current operating mode and shortcut
-//   • Permission status with open-settings buttons
-//   • Shortcut recorder field
-//   • Diagnostics / reset
+// Native macOS Settings window featuring:
+//   • Configurable Global Shortcut (recording, presets, conflict detection, Esc to cancel)
+//   • Startup / Launch at Login option (SMAppService + LaunchAgent fallback)
+//   • Permission status and direct System Settings deep-links
+//   • Diagnostics, status overview, and recovery instructions
 
 import AppKit
 import SwiftUI
-import Carbon   // for cmdKey / optionKey / controlKey / shiftKey in RecorderTextField
+import Carbon
+import ServiceManagement
 import os.log
-
 private let logger = Logger(subsystem: "com.powertools.trackpadtoggle", category: "Settings")
 
-// MARK: – Settings window
+// MARK: – Settings Window Controller
 
 final class SettingsWindowController: NSWindowController {
 
+    let viewModel: SettingsViewModel
+
     convenience init() {
+        let vm = SettingsViewModel()
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 480),
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 560),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -27,91 +30,230 @@ final class SettingsWindowController: NSWindowController {
         window.isReleasedWhenClosed = false
         window.center()
 
-        let contentView = SettingsView()
+        let contentView = SettingsView(vm: vm)
         window.contentView = NSHostingView(rootView: contentView)
 
-        self.init(window: window)
+        self.init(window: window, viewModel: vm)
+    }
+
+    init(window: NSWindow, viewModel: SettingsViewModel) {
+        self.viewModel = viewModel
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    /// Activates recording mode directly when user selects "Change Shortcut…" from the menu bar.
+    func startRecordingShortcut() {
+        viewModel.startRecording()
     }
 }
 
-// MARK: – SwiftUI content
+// MARK: – Main Settings View
 
 private struct SettingsView: View {
-    @StateObject private var vm = SettingsViewModel()
+    @ObservedObject var vm: SettingsViewModel
 
     var body: some View {
         Form {
-            // ── Status ────────────────────────────────────────────────────────
-            Section("Current State") {
-                LabeledContent("Trackpad", value: vm.stateDescription)
-                LabeledContent("Shortcut", value: vm.shortcutDescription)
+            // ── Status Overview ───────────────────────────────────────────────
+            Section("Status") {
+                LabeledContent("Trackpad Input") {
+                    Text(vm.stateDescription)
+                        .fontWeight(.medium)
+                }
+                LabeledContent("Active Shortcut") {
+                    Text(vm.shortcutDescription)
+                        .font(.system(.body, design: .monospaced))
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.15))
+                        .cornerRadius(6)
+                }
+                LabeledContent("Launch on Startup") {
+                    Text(vm.launchAtLogin ? "Enabled" : "Disabled")
+                        .foregroundColor(vm.launchAtLogin ? .green : .secondary)
+                }
             }
 
-            // ── Permissions ────────────────────────────────────────────────────
-            Section("Permissions") {
-                HStack {
-                    Image(systemName: vm.axGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundColor(vm.axGranted ? .green : .red)
-                    Text("Accessibility")
-                    Spacer()
-                    if !vm.axGranted {
-                        Button("Grant…") { PermissionsManager.shared.openAccessibilitySettings() }
-                            .buttonStyle(.borderless)
-                            .foregroundColor(.accentColor)
+            // ── Shortcut Configuration ────────────────────────────────────────
+            Section("Keyboard Shortcut Configuration") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Toggle Shortcut:")
+                            .fontWeight(.medium)
+                        Spacer()
+
+                        if vm.isRecording {
+                            // Active recorder field
+                            ShortcutRecorderField(
+                                displayText: vm.recorderDisplayText,
+                                isRecording: vm.isRecording,
+                                onCommit: { code, mods in
+                                    vm.commitShortcut(code: code, mods: mods)
+                                },
+                                onCancel: {
+                                    vm.cancelRecording()
+                                }
+                            )
+                            .frame(width: 180, height: 26)
+
+                            Button("Cancel") {
+                                vm.cancelRecording()
+                            }
+                            .buttonStyle(.bordered)
+                        } else {
+                            // Display badge and Record button
+                            Text(vm.shortcutDescription)
+                                .font(.system(.body, design: .monospaced))
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.accentColor.opacity(0.12))
+                                .cornerRadius(6)
+
+                            Button("Change Shortcut…") {
+                                vm.startRecording()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
                     }
+
+                    if vm.isRecording {
+                        HStack(spacing: 4) {
+                            Image(systemName: "record.circle.fill")
+                                .foregroundColor(.red)
+                            Text("Listening for key combination… Press any shortcut with modifiers (⌘, ⌥, ⌃, ⇧). Press Esc to cancel.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 2)
+                    }
+
+                    // Status feedback message (success / conflict / warning)
+                    if let message = vm.shortcutMessage {
+                        HStack(spacing: 6) {
+                            Image(systemName: vm.shortcutMessageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                                .foregroundColor(vm.shortcutMessageIsError ? .orange : .green)
+                            Text(message)
+                                .font(.caption)
+                                .foregroundColor(vm.shortcutMessageIsError ? .primary : .secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+
+                    // Presets
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Quick Presets:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: 6) {
+                            ForEach(Preferences.presets) { preset in
+                                Button(action: { vm.applyPreset(preset) }) {
+                                    Text("\(preset.display) (\(preset.title))")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(vm.shortcutDescription == preset.display ? .accentColor : nil)
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
+
+                    Text("The shortcut operates system-wide using Carbon RegisterEventHotKey. It works without Accessibility permissions and survives trackpad disable.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
-                HStack {
-                    Image(systemName: "info.circle.fill").foregroundColor(.secondary)
-                    Text("Input Monitoring")
-                    Spacer()
-                    Button("Open Settings…") { PermissionsManager.shared.openInputMonitoringSettings() }
-                        .buttonStyle(.borderless)
-                        .foregroundColor(.accentColor)
-                }
-                Text("Both permissions are required. Tap creation failure indicates missing Input Monitoring access.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
 
-            // ── Shortcut Recorder ─────────────────────────────────────────────
-            Section("Keyboard Shortcut") {
-                ShortcutRecorderRow(vm: vm)
-                Text("Click the field and press your desired key combination.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("Uses Carbon RegisterEventHotKey — works without Accessibility and survives trackpad disable.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            // ── Startup & Login ───────────────────────────────────────────────
+            Section("Startup Settings") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Start automatically at login", isOn: $vm.launchAtLogin)
+                        .toggleStyle(.switch)
 
-            // ── Diagnostics ────────────────────────────────────────────────────
-            Section("Diagnostics") {
-                LabeledContent("macOS", value: ProcessInfo.processInfo.operatingSystemVersionString)
-                LabeledContent("Mechanism", value: "CGEventTap (kCGHIDEventTap)")
-                LabeledContent("Hot key engine", value: "Carbon RegisterEventHotKey")
-                Button("Run Diagnostics") { vm.runDiagnostics() }
-                if let msg = vm.diagnosticResult {
-                    Text(msg)
+                    Text("When enabled, Trackpad Toggle starts automatically in the menu bar when you log into macOS. You can toggle the trackpad at any time.")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .textSelection(.enabled)
+
+                    if vm.launchAtLogin {
+                        Text("✓ Registered in macOS Login Items (runs in background as menu bar accessory).")
+                            .font(.caption2)
+                            .foregroundColor(.green)
+                    }
                 }
             }
 
-            // ── Reset ─────────────────────────────────────────────────────────
-            Section {
-                Button("Reset to Defaults", role: .destructive) { vm.resetToDefaults() }
+            // ── Permissions ───────────────────────────────────────────────────
+            Section("macOS Permissions") {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: vm.axGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundColor(vm.axGranted ? .green : .red)
+                        Text("Accessibility Permission")
+                        Spacer()
+                        if !vm.axGranted {
+                            Button("Grant Access…") {
+                                PermissionsManager.shared.openAccessibilitySettings()
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+
+                    HStack {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(.secondary)
+                        Text("Input Monitoring Permission")
+                        Spacer()
+                        Button("Open Settings…") {
+                            PermissionsManager.shared.openInputMonitoringSettings()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Text("Accessibility allows creating the event tap; Input Monitoring allows dropping events. Both are required for trackpad suppression.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
 
-            // ── Recovery info ─────────────────────────────────────────────────
-            Section("Recovery") {
-                Text("If the trackpad is disabled and you cannot re-enable it:")
-                    .font(.caption).bold()
+            // ── Diagnostics ───────────────────────────────────────────────────
+            Section("Diagnostics & Troubleshooting") {
+                VStack(alignment: .leading, spacing: 6) {
+                    LabeledContent("macOS Version", value: ProcessInfo.processInfo.operatingSystemVersionString)
+                    LabeledContent("Control Engine", value: "CGEventTap (kCGHIDEventTap)")
+                    LabeledContent("Hotkey Engine", value: "Carbon RegisterEventHotKey")
+
+                    HStack {
+                        Button("Run Full Diagnostics") { vm.runDiagnostics() }
+                        Spacer()
+                        Button("Reset to Defaults", role: .destructive) { vm.resetToDefaults() }
+                    }
+
+                    if let diag = vm.diagnosticResult {
+                        Text(diag)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .padding(8)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(6)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+
+            // ── Safe Recovery ─────────────────────────────────────────────────
+            Section("Emergency Recovery") {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("1. Press the registered shortcut (\(vm.shortcutDescription)) to toggle.")
-                    Text("2. Press ⌘Q to quit — the tap is removed on exit.")
-                    Text("3. Open Terminal and run:  killall TrackpadToggle")
-                    Text("4. Reboot — the trackpad always returns after a restart.")
+                    Text("If the trackpad is disabled and you need to restore control:")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                    Text("1. Press the toggle shortcut (\(vm.shortcutDescription)) to immediately re-enable.")
+                    Text("2. Press ⌘Q in this window or press ⌃⌥⌘Q to quit the app.")
+                    Text("3. Open Terminal via Spotlight (⌘Space) and run: killall TrackpadToggle")
+                    Text("4. Restart your Mac — trackpad input is unconditionally restored at reboot.")
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -119,62 +261,41 @@ private struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(minWidth: 440, minHeight: 420)
+        .frame(minWidth: 480, minHeight: 520)
         .onAppear { vm.refresh() }
     }
 }
 
-// MARK: – Shortcut recorder row
-// Kept as a separate View that reads state from SettingsViewModel.
-
-private struct ShortcutRecorderRow: View {
-    @ObservedObject var vm: SettingsViewModel
-
-    var body: some View {
-        HStack {
-            Text("Shortcut")
-            Spacer()
-            // NSViewRepresentable wrapping a key-capture NSTextField.
-            ShortcutRecorderField(
-                displayText: vm.recorderDisplayText,
-                isRecording: vm.isRecording,
-                onCommit: { code, mods in
-                    vm.commitShortcut(code: code, mods: mods)
-                },
-                onToggleRecording: {
-                    vm.isRecording.toggle()
-                }
-            )
-            .frame(width: 170, height: 26)
-        }
-    }
-}
-
-// MARK: – NSViewRepresentable shortcut field
+// MARK: – NSViewRepresentable Shortcut Field
 
 private struct ShortcutRecorderField: NSViewRepresentable {
     var displayText: String
     var isRecording: Bool
     var onCommit: (UInt32, UInt32) -> Void
-    var onToggleRecording: () -> Void
+    var onCancel: () -> Void
 
     func makeNSView(context: Context) -> RecorderTextField {
         let field = RecorderTextField()
         field.onCommit = onCommit
-        field.onToggleRecording = onToggleRecording
+        field.onCancel = onCancel
         return field
     }
 
     func updateNSView(_ nsView: RecorderTextField, context: Context) {
         nsView.isInRecordingMode = isRecording
         nsView.updateDisplay(displayText)
+        if isRecording {
+            DispatchQueue.main.async {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+        }
     }
 }
 
-/// A custom NSTextField that captures the next keypress as a shortcut.
+/// Custom NSTextField that intercepts key events during shortcut recording.
 final class RecorderTextField: NSTextField {
     var onCommit: ((UInt32, UInt32) -> Void)?
-    var onToggleRecording: (() -> Void)?
+    var onCancel: (() -> Void)?
 
     var isInRecordingMode = false {
         didSet { refreshDisplay() }
@@ -184,11 +305,11 @@ final class RecorderTextField: NSTextField {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        isBezeled    = true
-        isEditable   = false
+        isBezeled = true
+        isEditable = false
         isSelectable = false
-        alignment    = .center
-        wantsLayer   = true
+        alignment = .center
+        wantsLayer = true
         refreshDisplay()
     }
     required init?(coder: NSCoder) { fatalError() }
@@ -199,71 +320,138 @@ final class RecorderTextField: NSTextField {
     }
 
     private func refreshDisplay() {
-        stringValue = isInRecordingMode ? "Press shortcut…" : savedDisplayText
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        onToggleRecording?()
-        if isInRecordingMode { window?.makeFirstResponder(self) }
+        stringValue = isInRecordingMode ? "Press key combo…" : savedDisplayText
     }
 
     override var acceptsFirstResponder: Bool { true }
 
     override func keyDown(with event: NSEvent) {
-        guard isInRecordingMode else { super.keyDown(with: event); return }
+        guard isInRecordingMode else {
+            super.keyDown(with: event)
+            return
+        }
+
+        // Escape (0x35 = 53): cancel recording
+        if event.keyCode == 53 {
+            onCancel?()
+            return
+        }
 
         let carbonMods = cocoaModsToCarbonMods(event.modifierFlags)
         let carbonCode = UInt32(event.keyCode)
 
-        // Accept if at least one modifier is held, or it's a function key (≥ 0x60).
-        guard carbonMods != 0 || event.keyCode >= 0x60 else { return }
+        // Must have at least one modifier key, OR be a function key (keyCode >= 0x60)
+        guard carbonMods != 0 || event.keyCode >= 0x60 else {
+            // Give visual feedback in field
+            stringValue = "Include ⌘, ⌥, ⌃, or ⇧!"
+            return
+        }
 
         onCommit?(carbonCode, carbonMods)
     }
 
     private func cocoaModsToCarbonMods(_ flags: NSEvent.ModifierFlags) -> UInt32 {
         var mods: UInt32 = 0
-        if flags.contains(.command) { mods |= UInt32(cmdKey)     }
-        if flags.contains(.option)  { mods |= UInt32(optionKey)  }
+        if flags.contains(.command) { mods |= UInt32(cmdKey) }
+        if flags.contains(.option)  { mods |= UInt32(optionKey) }
         if flags.contains(.control) { mods |= UInt32(controlKey) }
-        if flags.contains(.shift)   { mods |= UInt32(shiftKey)   }
+        if flags.contains(.shift)   { mods |= UInt32(shiftKey) }
         return mods
     }
 }
 
-// MARK: – ViewModel
+// MARK: – Settings View Model
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
-    @Published var axGranted          = false
-    @Published var stateDescription   = ""
+    @Published var axGranted = false
+    @Published var stateDescription = ""
     @Published var shortcutDescription = Preferences.shared.hotKeyDescription
+    @Published var isRecording = false
+    @Published var shortcutMessage: String?
+    @Published var shortcutMessageIsError = false
     @Published var diagnosticResult: String?
-    @Published var isRecording        = false
+
+    @Published var launchAtLogin: Bool = LaunchAtLoginManager.shared.isEnabled {
+        didSet {
+            if launchAtLogin != oldValue {
+                let success = LaunchAtLoginManager.shared.setLaunchAtLogin(launchAtLogin)
+                if !success {
+                    logger.warning("Could not persist launch at login change")
+                }
+                (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
+            }
+        }
+    }
 
     var recorderDisplayText: String {
-        isRecording ? "Press shortcut…" : shortcutDescription
+        isRecording ? "Press keys…" : shortcutDescription
     }
 
     func refresh() {
-        axGranted          = PermissionsManager.shared.hasAccessibility
+        axGranted = PermissionsManager.shared.hasAccessibility
         shortcutDescription = Preferences.shared.hotKeyDescription
+        launchAtLogin = LaunchAtLoginManager.shared.isEnabled
         if let ctrl = (NSApp.delegate as? AppDelegate)?.trackpadController {
             stateDescription = ctrl.state.displayTitle
         }
     }
 
+    func startRecording() {
+        isRecording = true
+        shortcutMessage = nil
+    }
+
+    func cancelRecording() {
+        isRecording = false
+        shortcutMessage = nil
+    }
+
+    func commitShortcut(code: UInt32, mods: UInt32) {
+        Preferences.shared.hotKeyCode = code
+        Preferences.shared.hotKeyModifiers = mods
+        shortcutDescription = Preferences.shared.hotKeyDescription
+        isRecording = false
+
+        let result = HotKeyManager.shared.register()
+        switch result {
+        case .success:
+            shortcutMessage = "✓ Shortcut updated to \(shortcutDescription)"
+            shortcutMessageIsError = false
+        case .conflict(let msg):
+            shortcutMessage = "⚠️ \(msg)"
+            shortcutMessageIsError = true
+        case .failed(_, let msg):
+            shortcutMessage = "⚠️ \(msg)"
+            shortcutMessageIsError = true
+        }
+
+        (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
+    }
+
+    func applyPreset(_ preset: Preferences.ShortcutPreset) {
+        commitShortcut(code: preset.keyCode, mods: preset.modifiers)
+    }
+
     func runDiagnostics() {
-        let ax  = PermissionsManager.shared.hasAccessibility
-        let ver = ProcessInfo.processInfo.operatingSystemVersionString
+        let ax = PermissionsManager.shared.hasAccessibility
+        let smStatus: String
+        if #available(macOS 13.0, *) {
+            smStatus = "\(SMAppService.mainApp.status)"
+        } else {
+            smStatus = "N/A"
+        }
+
         var lines = [
-            "macOS: \(ver)",
-            "Accessibility: \(ax ? "✅ granted" : "❌ missing")",
-            "Input Monitoring: check System Settings (no public API query available)",
-            "Shortcut: \(Preferences.shared.hotKeyDescription)",
+            "macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)",
+            "Accessibility Granted: \(ax ? "YES" : "NO")",
+            "Active Shortcut: \(Preferences.shared.hotKeyDescription)",
+            "Launch At Login Enabled: \(LaunchAtLoginManager.shared.isEnabled ? "YES" : "NO")",
+            "SMAppService Status: \(smStatus)",
+            "HotKey Registration: \(HotKeyManager.shared.lastResult.message)"
         ]
         if let ctrl = (NSApp.delegate as? AppDelegate)?.trackpadController {
-            lines.append("State: \(ctrl.state.displayTitle)")
+            lines.append("Trackpad State: \(ctrl.state.displayTitle)")
         }
         diagnosticResult = lines.joined(separator: "\n")
     }
@@ -271,16 +459,9 @@ final class SettingsViewModel: ObservableObject {
     func resetToDefaults() {
         Preferences.shared.resetToDefaults()
         shortcutDescription = Preferences.shared.hotKeyDescription
-        HotKeyManager.shared.register()
-        (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
-        objectWillChange.send()
-    }
-
-    func commitShortcut(code: UInt32, mods: UInt32) {
-        Preferences.shared.hotKeyCode      = code
-        Preferences.shared.hotKeyModifiers = mods
-        shortcutDescription = Preferences.shared.hotKeyDescription
         isRecording = false
+        shortcutMessage = "✓ Reset to default shortcut (⌃⌥⌘T)"
+        shortcutMessageIsError = false
         HotKeyManager.shared.register()
         (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
     }
