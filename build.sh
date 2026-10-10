@@ -83,8 +83,10 @@ if [[ -f "$RES/AppIcon.png" ]]; then
   cp "$RES/AppIcon.png" "$CONTENTS/Resources/AppIcon.png"
 fi
 # ── Ad-hoc sign (required to launch on macOS without notarisation) ────────────
-echo "▶  Ad-hoc signing…"
+echo "▶  Ad-hoc signing with stable designated requirement…"
 codesign --force --sign - \
+  --identifier "com.powertools.trackpadtoggle" \
+  --requirements '=designated => identifier "com.powertools.trackpadtoggle"' \
   --entitlements "$RES/TrackpadToggle.entitlements" \
   "$APP"
 

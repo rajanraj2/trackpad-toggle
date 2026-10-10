@@ -360,14 +360,27 @@ final class UpdateManager {
     // MARK: – Clean Relaunch & Single-Instance Termination
 
     private func relaunchAndTerminate(targetApp: String) {
-        // Terminate any other instances before spawning the new version
         let currentPID = ProcessInfo.processInfo.processIdentifier
         let bundleID = Bundle.main.bundleIdentifier ?? "com.powertools.trackpadtoggle"
+
         for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID) where app.processIdentifier != currentPID {
             app.terminate()
         }
 
-        let relaunchScript = "sleep 0.8 && open \"\(targetApp)\""
+        // Wait for current process to completely exit before launching new binary, preventing macOS from reactivating the old PID
+        let relaunchScript = """
+        count=0
+        while kill -0 \(currentPID) 2>/dev/null; do
+            sleep 0.1
+            count=$((count + 1))
+            if [ $count -gt 25 ]; then
+                kill -9 \(currentPID) 2>/dev/null || true
+                break
+            fi
+        done
+        open -n "\(targetApp)"
+        """
+
         let shProc = Process()
         shProc.executableURL = URL(fileURLWithPath: "/bin/sh")
         shProc.arguments = ["-c", relaunchScript]
