@@ -23,6 +23,10 @@ final class MenuBarController {
         controller.onStateChange = { [weak self] _ in
             DispatchQueue.main.async { self?.rebuildMenu() }
         }
+
+        UpdateManager.shared.onStatusChange = { [weak self] _ in
+            DispatchQueue.main.async { self?.rebuildMenu() }
+        }
     }
 
     // MARK: – Button
@@ -45,6 +49,17 @@ final class MenuBarController {
         statusItem.isEnabled = false
         menu.addItem(statusItem)
 
+        // ── Update Notification Banner ────────────────────────────────────────
+        if case .updateAvailable(let newVer, _, _, _) = UpdateManager.shared.status {
+            menu.addItem(.separator())
+            let updateItem = NSMenuItem(
+                title: "⭐️ Update Available: v\(newVer) (Click to Upgrade)",
+                action: #selector(AppDelegate.promptUpdate),
+                keyEquivalent: ""
+            )
+            updateItem.target = NSApp.delegate
+            menu.addItem(updateItem)
+        }
         // Permissions warning banner
         if state == .permissionRequired {
             menu.addItem(.separator())
@@ -106,6 +121,12 @@ final class MenuBarController {
                                       keyEquivalent: ",")
         settingsItem.target = NSApp.delegate
         menu.addItem(settingsItem)
+
+        let checkUpdateItem = NSMenuItem(title: "Check for Updates…",
+                                         action: #selector(AppDelegate.checkForUpdatesManual),
+                                         keyEquivalent: "")
+        checkUpdateItem.target = NSApp.delegate
+        menu.addItem(checkUpdateItem)
 
         // ── Quit ──────────────────────────────────────────────────────────────
         menu.addItem(.separator())

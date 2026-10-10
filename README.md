@@ -144,14 +144,27 @@ You can have Trackpad Toggle start automatically when you log in:
 
 This uses the modern macOS `SMAppService.mainApp` Login Items API with a standard `~/Library/LaunchAgents` fallback, ensuring it starts seamlessly as a background menu-bar accessory.
 
+### In-App Update Notifications & 1-Click Upgrade
+
+Trackpad Toggle checks for updates automatically via the GitHub Releases API:
+
+- **Menu Bar Notification**: When a new version is released on GitHub, a prominent menu item appears:  
+  `⭐️ Update Available: vX.Y.Z (Click to Upgrade)`
+- **1-Click Automatic In-Place Upgrade**:
+  Clicking the update item presents an interactive prompt. Selecting **Download & Install Now** automatically:
+  1. Downloads the latest `.dmg` release.
+  2. Replaces `/Applications/TrackpadToggle.app` in place.
+  3. Strips Gatekeeper quarantine attributes so it opens seamlessly.
+  4. Automatically relaunches the updated version into the menu bar.
+- **Manual Check**: You can also click **Check for Updates…** in the menu bar at any time to verify your version.
+
 ## Running Automated Tests
 
 ```bash
 swift Tests/TrackpadToggleTests.swift
 ```
 
-No permissions or hardware required. Tests cover state transitions, permission-failure paths, shortcut updates, presets, and startup/login persistence. Expected output ends with `PASS` (20/20 tests passing).
-
+No permissions or hardware required. Tests cover state transitions, permission-failure paths, shortcut updates, presets, startup/login persistence, and update version comparisons. Expected output ends with `PASS` (28/28 tests passing).
 ## Architecture
 
 ```
@@ -162,6 +175,7 @@ Sources/
 ├── TrackpadController.swift       — protocol + CGEventTapController implementation
 ├── HotKeyManager.swift            — Carbon RegisterEventHotKey engine + conflict detection
 ├── LaunchAtLoginManager.swift     — SMAppService & LaunchAgent startup management
+├── UpdateManager.swift            — GitHub Releases API update checker & in-place DMG updater
 ├── PermissionsManager.swift       — Accessibility + Input Monitoring TCC checks
 ├── Preferences.swift              — UserDefaults wrapper, shortcut presets & persistence
 ├── MenuBarController.swift        — NSStatusItem + dynamic NSMenu with quick toggles
