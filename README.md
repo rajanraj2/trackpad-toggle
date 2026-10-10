@@ -1,8 +1,20 @@
 # Trackpad Toggle
 
-A lightweight macOS menu-bar utility that lets you disable and re-enable the built-in trackpad with a single configurable keyboard shortcut.
+[![Release](https://img.shields.io/github/v/release/rajanraj2/trackpad-toggle?color=blue&label=Latest%20Release)](https://github.com/rajanraj2/trackpad-toggle/releases/latest)
+[![Download DMG](https://img.shields.io/badge/Download-TrackpadToggle.dmg-success?logo=apple&style=for-the-badge)](https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg)
 
-## Requirements
+A lightweight native macOS menu-bar utility that lets you disable and re-enable your MacBook's built-in trackpad using a configurable global keyboard shortcut.
+
+---
+
+## 📥 Quick Download & Install
+
+1. Download **[TrackpadToggle.dmg](https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg)**.
+2. Double-click the `.dmg` in Finder and drag **Trackpad Toggle** into **Applications**.
+3. Launch via Spotlight (**⌘ + Space**) or Applications.
+4. Check **Launch at Login** in the menu bar to start automatically on every boot.
+
+---
 
 - macOS 14 (Sonoma) or later (tested on macOS 27.0.1)
 - MacBook with built-in trackpad (Apple Silicon confirmed)
