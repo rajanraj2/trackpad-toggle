@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+    CGEventTap with kCGEventTapOptionDefault (passive=false) CANNOT run inside the
+    App Sandbox. The sandbox strips the ability to install event taps that suppress
+    events. We intentionally do not sandbox this utility.
+    -->
+
+    <!-- Hardened runtime is required for notarisation and is compatible with our approach -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <false/>
+</dict>
+</plist>
