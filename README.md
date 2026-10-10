@@ -1,7 +1,7 @@
 # Trackpad Toggle
 
 [![Release](https://img.shields.io/github/v/release/rajanraj2/trackpad-toggle?color=blue&label=Latest%20Release)](https://github.com/rajanraj2/trackpad-toggle/releases/latest)
-[![Homebrew Cask](https://img.shields.io/badge/Homebrew-trackpad--toggle-orange?logo=homebrew)](https://github.com/rajanraj2/trackpad-toggle/tree/main/Casks)
+[![Homebrew Cask](https://img.shields.io/badge/Homebrew-rajanraj2%2Ftap-orange?logo=homebrew)](https://github.com/rajanraj2/homebrew-tap)
 [![Download DMG](https://img.shields.io/badge/Download-TrackpadToggle.dmg-success?logo=apple&style=for-the-badge)](https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg)
 A lightweight native macOS menu-bar utility that lets you disable and re-enable your MacBook's built-in trackpad using a configurable global keyboard shortcut.
 
@@ -27,9 +27,8 @@ A lightweight native macOS menu-bar utility that lets you disable and re-enable 
 Install Trackpad Toggle as a native Homebrew Cask:
 
 ```bash
-# Tap this repository and install Trackpad Toggle
-brew tap rajanraj2/trackpad-toggle https://github.com/rajanraj2/trackpad-toggle
-brew install --cask trackpad-toggle
+# Install directly in a single command (no prior brew tap needed)
+brew install --cask rajanraj2/tap/trackpad-toggle
 ```
 
 To update in the future:
