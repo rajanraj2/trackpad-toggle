@@ -60,22 +60,34 @@ protocol TrackpadControlling: AnyObject {
 // MARK: – CGEventTap Implementation
 
 /// Event types that originate from the trackpad and should be suppressed.
+/// Covers mouse pointer movement, clicks, drag, scroll, and all multi-touch gestures.
 private func makeSuppressedEventMask() -> CGEventMask {
-    let types: [CGEventType] = [
-        .mouseMoved,
-        .leftMouseDown,
-        .leftMouseUp,
-        .leftMouseDragged,
-        .rightMouseDown,
-        .rightMouseUp,
-        .rightMouseDragged,
-        .otherMouseDown,
-        .otherMouseUp,
-        .otherMouseDragged,
-        .scrollWheel
+    let rawValues: [UInt32] = [
+        CGEventType.leftMouseDown.rawValue,         // 1
+        CGEventType.leftMouseUp.rawValue,           // 2
+        CGEventType.rightMouseDown.rawValue,        // 3
+        CGEventType.rightMouseUp.rawValue,          // 4
+        CGEventType.mouseMoved.rawValue,            // 5
+        CGEventType.leftMouseDragged.rawValue,      // 6
+        CGEventType.rightMouseDragged.rawValue,     // 7
+        CGEventType.scrollWheel.rawValue,           // 22
+        CGEventType.tabletPointer.rawValue,         // 23
+        CGEventType.tabletProximity.rawValue,       // 24
+        CGEventType.otherMouseDown.rawValue,        // 25
+        CGEventType.otherMouseUp.rawValue,          // 26
+        CGEventType.otherMouseDragged.rawValue,     // 27
+        18,                                         // rotate gesture
+        19,                                         // beginGesture
+        20,                                         // endGesture
+        29,                                         // gesture event
+        30,                                         // magnify (pinch to zoom)
+        31,                                         // swipe gesture
+        32,                                         // smartMagnify
+        33,                                         // quickLook
+        34                                          // pressure (Force Touch)
     ]
-    return types.reduce(CGEventMask(0)) { mask, type in
-        mask | (CGEventMask(1) << CGEventMask(type.rawValue))
+    return rawValues.reduce(CGEventMask(0)) { mask, val in
+        mask | (CGEventMask(1) << CGEventMask(val))
     }
 }
 private let suppressedEventMask: CGEventMask = makeSuppressedEventMask()
@@ -203,8 +215,21 @@ private func eventTapCallback(
         return nil
     }
 
-    // ── Device discrimination heuristics ──────────────────────────────────────
+    // ── Suppression logic based on user configuration ────────────────────────
     //
+    // When blockCursorAndGestures is enabled (default):
+    // Completely drops ALL trackpad events in the mask.
+    // Cursor will NOT move, gestures will NOT work, clicks & scrolls will NOT work.
+    if Preferences.shared.blockCursorAndGestures {
+        return nil
+    }
+
+    // Partial / Standard mode (when user explicitly unchecks blockCursorAndGestures):
+    // Cursor movement is permitted through.
+    if type == .mouseMoved {
+        return Unmanaged.passRetained(event)
+    }
+
     // Scroll events: IsContinuous = 1 means trackpad or Magic Mouse momentum scroll.
     // Discrete scrolling (external scroll wheel) returns 0 → pass through.
     if type == .scrollWheel {
@@ -216,14 +241,11 @@ private func eventTapCallback(
     }
 
     // Pointer events: trackpad events typically carry subtype ≠ 0 or non-zero pressure.
-    // External USB/Bluetooth mice produce subtype 0 with pressure 0.
-    // This heuristic is best-effort; see README limitations section.
     let subtype  = event.getIntegerValueField(.mouseEventSubtype)
     let pressure = event.getIntegerValueField(.mouseEventPressure)
     if subtype == 0 && pressure == 0 {
-        return Unmanaged.passRetained(event) // likely an external mouse → pass through
+        return Unmanaged.passRetained(event) // external mouse → pass through
     }
-
     return nil // trackpad event → suppress
 }
 
