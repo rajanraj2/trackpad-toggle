@@ -91,16 +91,7 @@ for arg in "$@"; do
       open "$TARGET_DIR/TrackpadToggle.app"
       ;;
     --dmg)
-      DMG_OUT="$BUILD/TrackpadToggle.dmg"
-      DMG_STAGING="$BUILD/dmg_root"
-      rm -rf "$DMG_STAGING" "$DMG_OUT"
-      mkdir -p "$DMG_STAGING"
-      cp -R "$APP" "$DMG_STAGING/TrackpadToggle.app"
-      ln -s /Applications "$DMG_STAGING/Applications"
-      echo "▶  Creating Disk Image ($DMG_OUT)…"
-      hdiutil create -volname "Trackpad Toggle" -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG_OUT" >/dev/null
-      rm -rf "$DMG_STAGING"
-      echo "✅  Disk image created: $DMG_OUT"
+      bash "$SCRIPT_DIR/scripts/create_dmg.sh"
       ;;
     --pkg)
       PKG_OUT="$BUILD/TrackpadToggle.pkg"

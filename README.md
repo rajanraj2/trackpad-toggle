@@ -8,34 +8,41 @@ A lightweight macOS menu-bar utility that lets you disable and re-enable the bui
 - MacBook with built-in trackpad (Apple Silicon confirmed)
 - Xcode Command Line Tools (`xcode-select --install`)
 
-## Installation & Starting Without Terminal
+## Installation Options
 
-### Option A: Spotlight, Launchpad, or Finder (Recommended)
-1. In Finder, double-click **`Install.command`** in the project folder (or run `bash build.sh --install`).
-2. This compiles and places **Trackpad Toggle** directly into your **Applications** folder.
-3. From now on, launch it just like any native Mac app:
-   - **Spotlight**: Press **⌘ + Space**, type `Trackpad Toggle`, and hit Enter.
-   - **Launchpad**: Click the Trackpad Toggle icon.
-   - **Finder**: Open `/Applications` and double-click `TrackpadToggle.app`.
+### Option 1: macOS Disk Image (.dmg) — Recommended for Users
 
-### Option B: Automatic Startup (Zero Clicks Required)
-Once opened for the first time:
+The easiest way to install Trackpad Toggle on any Mac:
+
+1. Download **`TrackpadToggle.dmg`** from the [Releases](https://github.com/rajanraj2/trackpad-toggle/releases) page.
+2. Double-click the `.dmg` file in Finder to open it.
+3. Drag **`TrackpadToggle.app`** into the **Applications** folder shortcut.
+4. Eject the disk image.
+5. Open **Trackpad Toggle** from **Applications** or Spotlight (**⌘ + Space**).
+
+> **Gatekeeper Note (First Launch)**: Since this is an open-source, ad-hoc signed app, macOS may display a standard security notice on first open. Simply **right-click (Control-click) `TrackpadToggle.app` → select Open → click Open** (or go to *System Settings → Privacy & Security → Open Anyway*). You only need to do this once.
+
+### Option 2: Finder Double-Click Installer (`Install.command`)
+
+If you cloned this repository locally:
+1. In Finder, double-click **`Install.command`**.
+2. It compiles the app, copies it to `/Applications`, and starts it in your menu bar automatically.
+
+### Option 3: Automatic Startup at Login
+
+Once launched:
 1. Click the menu-bar icon → check **Launch at Login** (or toggle it in Settings).
-2. **You never have to start the app manually again.** It starts automatically in the background every time you turn on or log into your Mac.
+2. **Zero clicks needed going forward**: The app automatically starts in the background every time you boot or log in to your Mac.
 
-### Option C: Native macOS Installer Package (.pkg)
-Generate a native macOS installer package with:
-```bash
-bash build.sh --pkg
-```
-This generates **`build/TrackpadToggle.pkg`**. Double-clicking this `.pkg` runs Apple's native Installer wizard, installs the app to `/Applications`, and automatically launches it via a postinstall script.
+### Option 4: Build the DMG Locally
 
-### Option D: Shareable Disk Image (DMG) for Drag-and-Drop
+To generate the `.dmg` installer yourself:
 ```bash
 bash build.sh --dmg
+# Or run the dedicated packaging script:
+./scripts/create_dmg.sh
 ```
-This generates **`build/TrackpadToggle.dmg`** containing `TrackpadToggle.app` and an `/Applications` drag-and-drop symlink.
-## First Launch & Permissions
+This outputs **`build/TrackpadToggle.dmg`** (verified, compressed, with `/Applications` symlink).
 
 macOS requires two TCC permissions before the event tap can suppress trackpad input.
 
