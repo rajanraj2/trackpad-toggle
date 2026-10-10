@@ -38,6 +38,23 @@ final class UpdateManager {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0"
     }
 
+    // MARK: – Homebrew Detection
+
+    /// True if this application is managed by Homebrew Cask.
+    var isHomebrewManaged: Bool {
+        let paths = [
+            "/opt/homebrew/Caskroom/trackpad-toggle",
+            "/usr/local/Caskroom/trackpad-toggle"
+        ]
+        return paths.contains { FileManager.default.fileExists(atPath: $0) }
+    }
+
+    /// Path to brew executable if installed.
+    var brewExecutablePath: String? {
+        let candidates = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
+        return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
+    }
+
     // MARK: – Version Comparison (SemVer)
 
     /// Returns true if `remote` is strictly newer than `local` (e.g. "1.2.0" is newer than "1.1.0").
@@ -123,11 +140,61 @@ final class UpdateManager {
         }.resume()
     }
 
-    // MARK: – In-Place Automatic Upgrade
+    // MARK: – In-Place Automatic Upgrade (Unified Single Source of Truth)
 
-    /// Downloads the latest DMG, replaces the app bundle in /Applications, strips quarantine, and relaunches.
+    /// Upgrades the application to the new version.
+    /// If Homebrew manages the app, executes `brew upgrade --cask trackpad-toggle` to keep
+    /// Homebrew and the filesystem 100% in sync. Otherwise, installs directly from DMG
+    /// and synchronizes Caskroom metadata so there is never a version mismatch.
     func downloadAndInstallUpdate(
         from downloadURL: URL,
+        targetVersion: String? = nil,
+        progressHandler: @escaping (String) -> Void,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        // 1. If Homebrew manages the installation, try upgrading via Homebrew first
+        if isHomebrewManaged, let brewPath = brewExecutablePath {
+            progressHandler("Upgrading via Homebrew Cask…")
+            logger.info("Executing Homebrew upgrade: \(brewPath) upgrade --cask trackpad-toggle")
+
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else { return }
+                let brewProc = Process()
+                brewProc.executableURL = URL(fileURLWithPath: brewPath)
+                brewProc.arguments = ["upgrade", "--cask", "trackpad-toggle"]
+                var env = ProcessInfo.processInfo.environment
+                env["HOMEBREW_NO_AUTO_UPDATE"] = "1"
+                brewProc.environment = env
+
+                do {
+                    try brewProc.run()
+                    brewProc.waitUntilExit()
+                    if brewProc.terminationStatus == 0 {
+                        logger.info("Homebrew upgrade succeeded. Relaunching…")
+                        progressHandler("Relaunching Trackpad Toggle…")
+                        self.relaunchAndTerminate(targetApp: "/Applications/TrackpadToggle.app")
+                        completion(.success(()))
+                        return
+                    } else {
+                        logger.warning("Homebrew upgrade exited with status \(brewProc.terminationStatus). Falling back to direct DMG replacement.")
+                    }
+                } catch {
+                    logger.warning("Could not run brew upgrade: \(error.localizedDescription). Falling back to direct DMG replacement.")
+                }
+
+                // Fallback to direct DMG upgrade if brew upgrade failed
+                self.performDirectDMGUpgrade(from: downloadURL, targetVersion: targetVersion, progressHandler: progressHandler, completion: completion)
+            }
+            return
+        }
+
+        // 2. Direct DMG upgrade (for DMG installs or when Homebrew is not managing)
+        performDirectDMGUpgrade(from: downloadURL, targetVersion: targetVersion, progressHandler: progressHandler, completion: completion)
+    }
+
+    private func performDirectDMGUpgrade(
+        from downloadURL: URL,
+        targetVersion: String?,
         progressHandler: @escaping (String) -> Void,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
@@ -135,7 +202,7 @@ final class UpdateManager {
         logger.info("Starting download of \(downloadURL.absoluteString)")
 
         let task = URLSession.shared.downloadTask(with: downloadURL) { [weak self] tempLocation, response, error in
-            guard self != nil else { return }
+            guard let self = self else { return }
 
             if let error = error {
                 completion(.failure(error))
@@ -217,19 +284,15 @@ final class UpdateManager {
                 try? FileManager.default.removeItem(atPath: mountDir)
                 try? FileManager.default.removeItem(atPath: backupApp)
 
+                // 5. Synchronize Homebrew Caskroom metadata so `brew list --cask --versions` matches!
+                if let version = targetVersion {
+                    self.syncHomebrewCaskroom(to: version, sourceApp: targetApp)
+                }
+
                 progressHandler("Relaunching Trackpad Toggle…")
                 logger.info("Update installed successfully. Relaunching \(targetApp)…")
 
-                // Spawn background process to reopen the new version after current process quits
-                let relaunchScript = "sleep 0.8 && open \"\(targetApp)\""
-                let shProc = Process()
-                shProc.executableURL = URL(fileURLWithPath: "/bin/sh")
-                shProc.arguments = ["-c", relaunchScript]
-                try? shProc.run()
-
-                DispatchQueue.main.async {
-                    NSApp.terminate(nil)
-                }
+                self.relaunchAndTerminate(targetApp: targetApp)
                 completion(.success(()))
             } catch {
                 logger.error("Update installation failed: \(error.localizedDescription)")
@@ -243,6 +306,63 @@ final class UpdateManager {
             }
         }
         task.resume()
+    }
+
+    // MARK: – Caskroom Synchronization
+
+    /// Keeps Homebrew Caskroom directory in sync when the app is updated directly via DMG,
+    /// ensuring `brew list --cask --versions` and `/Applications` always report the exact same version.
+    func syncHomebrewCaskroom(to newVersion: String, sourceApp: String) {
+        let caskrooms = [
+            "/opt/homebrew/Caskroom/trackpad-toggle",
+            "/usr/local/Caskroom/trackpad-toggle"
+        ]
+        for caskroom in caskrooms {
+            guard FileManager.default.fileExists(atPath: caskroom) else { continue }
+            let targetVerDir = "\(caskroom)/\(newVersion)"
+            do {
+                // Remove any older version folders in Caskroom
+                let entries = try FileManager.default.contentsOfDirectory(atPath: caskroom)
+                for entry in entries where !entry.hasPrefix(".") && entry != newVersion {
+                    let oldPath = "\(caskroom)/\(entry)"
+                    logger.info("Removing stale Caskroom version folder: \(oldPath)")
+                    try? FileManager.default.removeItem(atPath: oldPath)
+                }
+                // Create new version directory and copy app bundle
+                try FileManager.default.createDirectory(atPath: targetVerDir, withIntermediateDirectories: true)
+                let destApp = "\(targetVerDir)/TrackpadToggle.app"
+                try? FileManager.default.removeItem(atPath: destApp)
+                let cpProc = Process()
+                cpProc.executableURL = URL(fileURLWithPath: "/bin/cp")
+                cpProc.arguments = ["-R", sourceApp, destApp]
+                try cpProc.run()
+                cpProc.waitUntilExit()
+                logger.info("Synchronized Caskroom to \(targetVerDir)")
+            } catch {
+                logger.warning("Failed to sync Caskroom: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    // MARK: – Clean Relaunch & Single-Instance Termination
+
+    private func relaunchAndTerminate(targetApp: String) {
+        // Terminate any other instances before spawning the new version
+        let currentPID = ProcessInfo.processInfo.processIdentifier
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.powertools.trackpadtoggle"
+        for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID) where app.processIdentifier != currentPID {
+            app.terminate()
+        }
+
+        let relaunchScript = "sleep 0.8 && open \"\(targetApp)\""
+        let shProc = Process()
+        shProc.executableURL = URL(fileURLWithPath: "/bin/sh")
+        shProc.arguments = ["-c", relaunchScript]
+        try? shProc.run()
+
+        DispatchQueue.main.async {
+            NSApp.terminate(nil)
+        }
     }
 
     enum UpdateError: LocalizedError {

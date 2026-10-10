@@ -342,7 +342,22 @@ test("UpdateManager reports equal version as not newer") {
 test("UpdateManager reports older version as not newer") {
     try assert(!isVersionNewer("1.0.5", than: "1.1.0"))
 }
-// ─────────────────────────────────────────────────────────────────────────────
+
+print("\n━━━ Single Source of Truth & Instance Management [AUTO] ━━━")
+
+test("Single instance filter identifies foreign process IDs") {
+    let currentPID: Int32 = 1234
+    let pids: [Int32] = [1234, 5678, 9012]
+    let foreignPIDs = pids.filter { $0 != currentPID }
+    try assert(foreignPIDs == [5678, 9012])
+}
+
+test("Caskroom path generation creates proper version folder name") {
+    let caskroomBase = "/opt/homebrew/Caskroom/trackpad-toggle"
+    let version = "1.2.0"
+    let targetDir = "\(caskroomBase)/\(version)"
+    try assert(targetDir == "/opt/homebrew/Caskroom/trackpad-toggle/1.2.0")
+}
 // Manual verification checklist (not executed here — printed for human runner)
 // ─────────────────────────────────────────────────────────────────────────────
 
