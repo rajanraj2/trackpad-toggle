@@ -469,6 +469,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var blockCursorAndGestures: Bool = Preferences.shared.blockCursorAndGestures {
         didSet {
             Preferences.shared.blockCursorAndGestures = blockCursorAndGestures
+            (NSApp.delegate as? AppDelegate)?.trackpadController.updateSuppressionMode()
             (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
         }
     }
