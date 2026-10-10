@@ -44,4 +44,27 @@ final class PermissionsManager {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
         NSWorkspace.shared.open(url)
     }
+
+    // MARK: – Reset Stale TCC Cache
+
+    /// Resets stale Accessibility and Input Monitoring approval records using tccutil.
+    /// Essential when an app binary is upgraded or rebuilt and macOS cached a previous signature hash.
+    @discardableResult
+    func resetPermissions() -> Bool {
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.powertools.trackpadtoggle"
+
+        let p1 = Process()
+        p1.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        p1.arguments = ["reset", "Accessibility", bundleID]
+        try? p1.run()
+        p1.waitUntilExit()
+
+        let p2 = Process()
+        p2.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        p2.arguments = ["reset", "ListenEvent", bundleID]
+        try? p2.run()
+        p2.waitUntilExit()
+
+        return true
+    }
 }

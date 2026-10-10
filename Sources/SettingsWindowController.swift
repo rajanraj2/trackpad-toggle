@@ -239,10 +239,25 @@ private struct SettingsView: View {
                         }
                         .buttonStyle(.bordered)
                     }
-
                     Text("Accessibility allows creating the event tap; Input Monitoring allows dropping events. Both are required for trackpad suppression.")
                         .font(.caption)
                         .foregroundColor(.secondary)
+
+                    Divider().padding(.vertical, 2)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Fix Permission Loop")
+                                .font(.caption).bold()
+                            Text("If toggled ON in System Settings but still prompts, macOS cached a stale binary signature hash.")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Button("Reset Permission Cache") {
+                            vm.resetPermissionCache()
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
 
@@ -500,5 +515,10 @@ final class SettingsViewModel: ObservableObject {
         shortcutMessageIsError = false
         HotKeyManager.shared.register()
         (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
+    }
+
+    func resetPermissionCache() {
+        PermissionsManager.shared.resetPermissions()
+        refresh()
     }
 }

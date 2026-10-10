@@ -112,17 +112,13 @@ final class CGEventTapController: TrackpadControlling {
     }
 
     func disable() throws {
-        guard PermissionsManager.shared.hasAccessibility else {
-            state = .permissionRequired
-            throw TrackpadError.permissionRequired
-        }
         state = .transitioning
         do {
             try installTap()
             state = .disabled
             logger.info("Trackpad disabled (event tap installed)")
         } catch {
-            state = .failed(error.localizedDescription)
+            state = .permissionRequired
             throw error
         }
     }

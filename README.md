@@ -274,9 +274,20 @@ Releases are fully automated via GitHub Actions using Pull Request labels:
 **App doesn't appear in the menu bar**  
 Check that `LSUIElement = true` is in Info.plist and the binary is inside a valid `.app` bundle structure.
 
+**Permission Loop: Prompts for Accessibility even though it's already enabled in System Settings**  
+When the app is updated, rebuilt, or installed via Homebrew, macOS's security daemon (TCC) detects a new binary signature hash (`cdhash`). System Settings still shows the switch as "ON" from the older version, but macOS rejects the new binary under the hood.
+
+To fix it:
+- **In-App (1-Click)**: In the permission alert or in Settings, click **Reset Permission Cache (Fix Stale Hash)**.
+- **Terminal**: Run:
+  ```bash
+  tccutil reset Accessibility com.powertools.trackpadtoggle
+  tccutil reset ListenEvent com.powertools.trackpadtoggle
+  ```
+- **System Settings**: Go to **System Settings → Privacy & Security → Accessibility**, select **Trackpad Toggle**, click the **minus button (`-`)** to remove it, then re-add `/Applications/TrackpadToggle.app`. Do the same under **Input Monitoring**.
+
 **Trackpad still moves cursor after disabling**  
 Accessibility or Input Monitoring permission is missing. Open Settings → check the Permissions section.
-
 **Shortcut doesn't fire**  
 Another app has registered the same combination (Carbon hot keys are system-exclusive). Change the shortcut in Settings.
 

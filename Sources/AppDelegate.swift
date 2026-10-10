@@ -214,17 +214,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = NSAlert()
         alert.messageText = "Accessibility Permission Required"
         alert.informativeText = """
-            Trackpad Toggle needs Accessibility access to install an event tap \
-            that intercepts trackpad input.
+            Trackpad Toggle needs Accessibility access to intercept trackpad input.
 
-            Click "Open Settings" and toggle the switch next to Trackpad Toggle. \
-            You may need to quit and relaunch the app after granting permission.
+            • If Trackpad Toggle is already enabled in System Settings:
+              macOS has cached an older binary signature. Click "Reset Permission Cache" below to fix this automatically.
+
+            • Alternatively in System Settings:
+              Select Trackpad Toggle, click the minus button (-) to remove it, then re-add it.
             """
         alert.addButton(withTitle: "Open Accessibility Settings")
+        alert.addButton(withTitle: "Reset Permission Cache (Fix Stale Hash)")
         alert.addButton(withTitle: "Later")
         alert.alertStyle = .warning
         NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn {
+        let resp = alert.runModal()
+        if resp == .alertFirstButtonReturn {
+            PermissionsManager.shared.openAccessibilitySettings()
+        } else if resp == .alertSecondButtonReturn {
+            PermissionsManager.shared.resetPermissions()
             PermissionsManager.shared.openAccessibilitySettings()
         }
     }
@@ -233,17 +240,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = NSAlert()
         alert.messageText = "Input Monitoring Permission Required"
         alert.informativeText = """
-            Accessibility is granted but the event tap could not be installed. \
-            This usually means Input Monitoring has not been granted.
+            Input Monitoring permission is required to suppress trackpad events.
 
-            Open System Settings → Privacy & Security → Input Monitoring and \
-            enable Trackpad Toggle. Then toggle the trackpad again.
+            • If Trackpad Toggle is already enabled:
+              Click "Reset Permission Cache" below, or in System Settings, select Trackpad Toggle, click the minus button (-) to remove it, and re-add it.
             """
         alert.addButton(withTitle: "Open Input Monitoring Settings")
+        alert.addButton(withTitle: "Reset Permission Cache (Fix Stale Hash)")
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
         NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn {
+        let resp = alert.runModal()
+        if resp == .alertFirstButtonReturn {
+            PermissionsManager.shared.openInputMonitoringSettings()
+        } else if resp == .alertSecondButtonReturn {
+            PermissionsManager.shared.resetPermissions()
             PermissionsManager.shared.openInputMonitoringSettings()
         }
     }
