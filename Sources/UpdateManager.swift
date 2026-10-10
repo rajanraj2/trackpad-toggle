@@ -33,11 +33,24 @@ final class UpdateManager {
 
     var onStatusChange: ((UpdateStatus) -> Void)?
 
-    /// The running app's semantic version from Info.plist (e.g. "1.1.0").
+    /// The running app's semantic version from Info.plist and Caskroom.
     var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0"
+        var baseVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        if isHomebrewManaged {
+            let caskrooms = ["/opt/homebrew/Caskroom/trackpad-toggle", "/usr/local/Caskroom/trackpad-toggle"]
+            for cr in caskrooms {
+                if let entries = try? FileManager.default.contentsOfDirectory(atPath: cr) {
+                    let versions = entries.filter { !$0.hasPrefix(".") }
+                    if let latest = versions.sorted(by: { Self.isVersion($0, newerThan: $1) }).first {
+                        if Self.isVersion(latest, newerThan: baseVersion) {
+                            baseVersion = latest
+                        }
+                    }
+                }
+            }
+        }
+        return baseVersion
     }
-
     // MARK: – Homebrew Detection
 
     /// True if this application is managed by Homebrew Cask.

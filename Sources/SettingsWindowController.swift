@@ -241,6 +241,23 @@ private struct SettingsView: View {
                 }
             }
 
+            // ── Menu Bar Appearance ───────────────────────────────────────────
+            Section("Menu Bar Appearance") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Show icon in menu bar", isOn: $vm.showMenuBarIcon)
+                        .toggleStyle(.switch)
+                    Text("When disabled, Trackpad Toggle runs silently in the background without taking up space in your menu bar.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    if !vm.showMenuBarIcon {
+                        Text("💡 Tip: When the menu bar icon is hidden, simply open Trackpad Toggle from Spotlight (⌘Space), Launchpad, or Applications to access Settings. Your global shortcut works at all times.")
+                            .font(.caption2)
+                            .foregroundColor(.accentColor)
+                    }
+                }
+            }
+
             // ── Permissions ───────────────────────────────────────────────────
             Section("macOS Permissions") {
                 VStack(alignment: .leading, spacing: 6) {
@@ -474,6 +491,13 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    @Published var showMenuBarIcon: Bool = Preferences.shared.showMenuBarIcon {
+        didSet {
+            Preferences.shared.showMenuBarIcon = showMenuBarIcon
+            (NSApp.delegate as? AppDelegate)?.menuBarController?.updateVisibility()
+        }
+    }
+
     var recorderDisplayText: String {
         isRecording ? "Press keys…" : shortcutDescription
     }
@@ -483,6 +507,7 @@ final class SettingsViewModel: ObservableObject {
         shortcutDescription = Preferences.shared.hotKeyDescription
         launchAtLogin = LaunchAtLoginManager.shared.isEnabled
         blockCursorAndGestures = Preferences.shared.blockCursorAndGestures
+        showMenuBarIcon = Preferences.shared.showMenuBarIcon
         if let ctrl = (NSApp.delegate as? AppDelegate)?.trackpadController {
             stateDescription = ctrl.state.displayTitle
         }
@@ -549,8 +574,8 @@ final class SettingsViewModel: ObservableObject {
 
     func resetToDefaults() {
         Preferences.shared.resetToDefaults()
-        shortcutDescription = Preferences.shared.hotKeyDescription
         blockCursorAndGestures = true
+        showMenuBarIcon = true
         isRecording = false
         shortcutMessage = "✓ Reset to default shortcut (⌃⌥⌘T)"
         shortcutMessageIsError = false

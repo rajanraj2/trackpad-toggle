@@ -99,12 +99,14 @@ struct PreferencesT {
     var hotKeyModifiers: UInt32         = 0x0B00 // cmd+opt+ctrl
     var launchAtLogin: Bool             = false
     var blockCursorAndGestures: Bool    = true
+    var showMenuBarIcon: Bool           = true
 
     mutating func resetToDefaults() {
         hotKeyCode              = 0x11
         hotKeyModifiers         = 0x0B00
         launchAtLogin           = false
         blockCursorAndGestures  = true
+        showMenuBarIcon         = true
     }
 }
 
@@ -357,6 +359,31 @@ test("Caskroom path generation creates proper version folder name") {
     let version = "1.2.0"
     let targetDir = "\(caskroomBase)/\(version)"
     try assert(targetDir == "/opt/homebrew/Caskroom/trackpad-toggle/1.2.0")
+}
+
+test("showMenuBarIcon defaults to true") {
+    let p = PreferencesT()
+    try assert(p.showMenuBarIcon == true)
+}
+
+test("showMenuBarIcon can be toggled and reset") {
+    var p = PreferencesT()
+    p.showMenuBarIcon = false
+    try assert(p.showMenuBarIcon == false)
+    p.resetToDefaults()
+    try assert(p.showMenuBarIcon == true)
+}
+
+test("Unified version item title displays correctly for up to date vs update available") {
+    let current = "1.2.3"
+    let upToDateTitle = "Trackpad Toggle v\(current)  (Latest)"
+    try assert(upToDateTitle.contains("(Latest)"))
+    try assert(!upToDateTitle.contains("Click to Update"))
+
+    let newVer = "1.3.0"
+    let updateAvailableTitle = "v\(current) → v\(newVer)  (Click to Update)"
+    try assert(updateAvailableTitle.contains("Click to Update"))
+    try assert(updateAvailableTitle.contains("→"))
 }
 // Manual verification checklist (not executed here — printed for human runner)
 // ─────────────────────────────────────────────────────────────────────────────
