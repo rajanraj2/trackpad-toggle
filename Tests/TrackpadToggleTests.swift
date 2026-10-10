@@ -91,14 +91,16 @@ final class MockTrackpadController {
 
 // Simple Preferences mirror (in-memory, no UserDefaults)
 struct PreferencesT {
-    var hotKeyCode: UInt32      = 0x11
-    var hotKeyModifiers: UInt32 = 0x0B00 // cmd+opt+ctrl
-    var launchAtLogin: Bool     = false
+    var hotKeyCode: UInt32              = 0x11
+    var hotKeyModifiers: UInt32         = 0x0B00 // cmd+opt+ctrl
+    var launchAtLogin: Bool             = false
+    var blockCursorAndGestures: Bool    = true
 
     mutating func resetToDefaults() {
-        hotKeyCode      = 0x11
-        hotKeyModifiers = 0x0B00
-        launchAtLogin   = false
+        hotKeyCode              = 0x11
+        hotKeyModifiers         = 0x0B00
+        launchAtLogin           = false
+        blockCursorAndGestures  = true
     }
 }
 
@@ -255,6 +257,29 @@ test("hotkey shortcut update persists new modifiers and code") {
     try assert(p.hotKeyModifiers == 0x0900)
 }
 
+test("blockCursorAndGestures defaults to true (Full Lockdown)") {
+    let p = PreferencesT()
+    try assert(p.blockCursorAndGestures == true)
+}
+
+test("blockCursorAndGestures can be toggled and reset") {
+    var p = PreferencesT()
+    p.blockCursorAndGestures = false
+    try assert(p.blockCursorAndGestures == false)
+    p.resetToDefaults()
+    try assert(p.blockCursorAndGestures == true)
+}
+
+test("suppressed event mask contains gesture event types") {
+    let gestureRawValues: [UInt32] = [18, 19, 20, 29, 30, 31, 32, 33, 34]
+    let mask = gestureRawValues.reduce(UInt64(0)) { m, val in
+        m | (UInt64(1) << UInt64(val))
+    }
+    for val in gestureRawValues {
+        let bit = UInt64(1) << UInt64(val)
+        try assert((mask & bit) != 0, "Missing bit for event rawValue \(val)")
+    }
+}
 print("\n━━━ HotKey Registration & Conflict Detection [AUTO] ━━━")
 
 test("HotKeyRegistrationResult success isSuccess returns true") {

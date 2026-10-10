@@ -6,9 +6,10 @@ import Carbon
 
 /// Keys stored in UserDefaults.standard.
 private enum PrefKey {
-    static let hotKeyCode  = "hotKeyCode"
-    static let hotKeyMods  = "hotKeyMods"
-    static let launchAtLogin = "launchAtLogin"
+    static let hotKeyCode              = "hotKeyCode"
+    static let hotKeyMods              = "hotKeyMods"
+    static let launchAtLogin           = "launchAtLogin"
+    static let blockCursorAndGestures  = "blockCursorAndGestures"
 }
 
 /// Default shortcut: Control + Option + Command + T  (kVK_ANSI_T = 0x11)
@@ -48,11 +49,26 @@ final class Preferences {
         set { UserDefaults.standard.set(newValue, forKey: PrefKey.launchAtLogin) }
     }
 
+    // MARK: – Block Cursor & Gestures
+    var blockCursorAndGestures: Bool {
+        get {
+            // Defaults to true: disabling trackpad completely freezes cursor & gestures
+            if UserDefaults.standard.object(forKey: PrefKey.blockCursorAndGestures) == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: PrefKey.blockCursorAndGestures)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: PrefKey.blockCursorAndGestures)
+        }
+    }
+
     // MARK: – Reset
 
     func resetToDefaults() {
         UserDefaults.standard.removeObject(forKey: PrefKey.hotKeyCode)
         UserDefaults.standard.removeObject(forKey: PrefKey.hotKeyMods)
+        UserDefaults.standard.removeObject(forKey: PrefKey.blockCursorAndGestures)
     }
 
     // MARK: – Presets

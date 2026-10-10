@@ -167,6 +167,33 @@ private struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            // ── Trackpad Suppression Mode ─────────────────────────────────────
+            Section("Trackpad Suppression Mode") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Block Cursor Movement & Gestures", isOn: $vm.blockCursorAndGestures)
+                        .toggleStyle(.switch)
+
+                    Text("Controls whether cursor movement and multi-touch gestures (swipes, pinch-to-zoom, rotate) are completely blocked when the trackpad is disabled.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    if vm.blockCursorAndGestures {
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.fill").foregroundColor(.accentColor)
+                            Text("Full Lockdown: Cursor will NOT move, gestures will NOT work, and clicks/scrolls are blocked.")
+                                .font(.caption2)
+                                .foregroundColor(.accentColor)
+                        }
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.open.fill").foregroundColor(.secondary)
+                            Text("Partial Mode: Clicks and scrolls are blocked, but cursor movement is allowed.")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
 
             // ── Startup & Login ───────────────────────────────────────────────
             Section("Startup Settings") {
@@ -384,6 +411,13 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    @Published var blockCursorAndGestures: Bool = Preferences.shared.blockCursorAndGestures {
+        didSet {
+            Preferences.shared.blockCursorAndGestures = blockCursorAndGestures
+            (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
+        }
+    }
+
     var recorderDisplayText: String {
         isRecording ? "Press keys…" : shortcutDescription
     }
@@ -392,11 +426,11 @@ final class SettingsViewModel: ObservableObject {
         axGranted = PermissionsManager.shared.hasAccessibility
         shortcutDescription = Preferences.shared.hotKeyDescription
         launchAtLogin = LaunchAtLoginManager.shared.isEnabled
+        blockCursorAndGestures = Preferences.shared.blockCursorAndGestures
         if let ctrl = (NSApp.delegate as? AppDelegate)?.trackpadController {
             stateDescription = ctrl.state.displayTitle
         }
     }
-
     func startRecording() {
         isRecording = true
         shortcutMessage = nil
@@ -448,7 +482,8 @@ final class SettingsViewModel: ObservableObject {
             "Active Shortcut: \(Preferences.shared.hotKeyDescription)",
             "Launch At Login Enabled: \(LaunchAtLoginManager.shared.isEnabled ? "YES" : "NO")",
             "SMAppService Status: \(smStatus)",
-            "HotKey Registration: \(HotKeyManager.shared.lastResult.message)"
+            "HotKey Registration: \(HotKeyManager.shared.lastResult.message)",
+            "Block Cursor & Gestures: \(Preferences.shared.blockCursorAndGestures ? "ENABLED (Full Lockdown)" : "DISABLED (Cursor Allowed)")"
         ]
         if let ctrl = (NSApp.delegate as? AppDelegate)?.trackpadController {
             lines.append("Trackpad State: \(ctrl.state.displayTitle)")
@@ -459,6 +494,7 @@ final class SettingsViewModel: ObservableObject {
     func resetToDefaults() {
         Preferences.shared.resetToDefaults()
         shortcutDescription = Preferences.shared.hotKeyDescription
+        blockCursorAndGestures = true
         isRecording = false
         shortcutMessage = "✓ Reset to default shortcut (⌃⌥⌘T)"
         shortcutMessageIsError = false

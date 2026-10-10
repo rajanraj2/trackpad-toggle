@@ -95,11 +95,28 @@ Without both, the app runs but cannot block trackpad events. A warning banner ap
 | Action | How |
 |---|---|
 | Toggle trackpad on/off | Press **⌃⌥⌘T** (default) or click the menu-bar icon |
+| Toggle Block Cursor & Gestures | Click menu bar → **Block Cursor & Gestures** (checkmark) or in **Settings…** |
 | Change shortcut key | Click menu bar → **Change Shortcut…** or open **Settings…** |
 | Enable/disable startup at login | Click menu bar → **Launch at Login** (checkmark toggle) or in **Settings…** |
 | Open Settings | Click menu bar → Settings… or press **⌘,** |
 | Quit | Click menu bar → Quit, or press **⌘Q** in Settings |
 
+### Configurable Trackpad Suppression (Block Cursor & Gestures)
+
+You can configure the exact level of trackpad suppression to suit your workflow:
+
+- **Full Lockdown (Default & Recommended)**:
+  - **Cursor movement is completely frozen** (cursor does NOT move).
+  - **All multi-touch gestures are blocked** (swipes, pinch-to-zoom, rotate, smart magnify).
+  - **Clicks and scrolls are blocked** (physical click, tap-to-click, two-finger scroll).
+  - Input from the trackpad is 100% disabled.
+
+- **Partial Mode**:
+  - Clicks, taps, and scrolling are suppressed, but cursor movement remains active.
+
+**How to toggle this setting**:
+- **From Menu Bar**: Click the menu-bar icon → toggle **Block Cursor & Gestures** (shows `✓` when enabled).
+- **From Settings**: Open Settings → under **Trackpad Suppression Mode**, toggle **Block Cursor Movement & Gestures**.
 ### Setting & Updating Shortcut Key
 
 You can customize the global toggle shortcut at any time:

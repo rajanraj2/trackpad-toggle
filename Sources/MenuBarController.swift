@@ -91,6 +91,13 @@ final class MenuBarController {
         launchAtLoginItem.state = LaunchAtLoginManager.shared.isEnabled ? .on : .off
         menu.addItem(launchAtLoginItem)
 
+        let blockItem = NSMenuItem(title: "Block Cursor & Gestures",
+                                   action: #selector(AppDelegate.toggleBlockCursorAndGestures),
+                                   keyEquivalent: "")
+        blockItem.target = NSApp.delegate
+        blockItem.state = Preferences.shared.blockCursorAndGestures ? .on : .off
+        menu.addItem(blockItem)
+
         menu.addItem(.separator())
 
         // ── Settings ──────────────────────────────────────────────────────────

@@ -88,6 +88,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = LaunchAtLoginManager.shared.setLaunchAtLogin(!current)
         menuBarController?.rebuildMenu()
     }
+
+    @objc func toggleBlockCursorAndGestures() {
+        let current = Preferences.shared.blockCursorAndGestures
+        Preferences.shared.blockCursorAndGestures = !current
+        logger.info("Toggled blockCursorAndGestures to: \(!current)")
+        menuBarController?.rebuildMenu()
+    }
+
     @objc func grantAccessibility() {
         PermissionsManager.shared.openAccessibilitySettings()
     }
