@@ -84,24 +84,34 @@ private struct SettingsView: View {
             }
             .padding(.vertical, 4)
 
-            // ── Status Overview ───────────────────────────────────────────────
-            Section("Status") {
-                LabeledContent("Trackpad Input") {
-                    Text(vm.stateDescription)
-                        .fontWeight(.medium)
-                }
-                LabeledContent("Active Shortcut") {
-                    Text(vm.shortcutDescription)
-                        .font(.system(.body, design: .monospaced))
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.15))
-                        .cornerRadius(6)
-                }
-                LabeledContent("Launch on Startup") {
-                    Text(vm.launchAtLogin ? "Enabled" : "Disabled")
-                        .foregroundColor(vm.launchAtLogin ? .green : .secondary)
+            // ── Trackpad Control & Status ─────────────────────────────────────
+            Section("Trackpad Control") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Trackpad: \(vm.stateDescription)")
+                                .fontWeight(.medium)
+                            Text("Shortcut: \(vm.shortcutDescription)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+
+                        Button(action: { vm.toggleTrackpad() }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: vm.isTrackpadDisabled ? "hand.point.up.left.fill" : "hand.raised.slash.fill")
+                                Text(vm.isTrackpadDisabled ? "Enable Trackpad" : "Disable Trackpad")
+                            }
+                            .padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(vm.isTrackpadDisabled ? .green : .red)
+                    }
+
+                    LabeledContent("Launch on Startup") {
+                        Text(vm.launchAtLogin ? "Enabled" : "Disabled")
+                            .foregroundColor(vm.launchAtLogin ? .green : .secondary)
+                    }
                 }
             }
 
@@ -330,6 +340,39 @@ private struct SettingsView: View {
                     }
                 }
             }
+            // ── Software Updates ──────────────────────────────────────────────
+            Section("Software Updates") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Installed Version: v\(vm.currentVersion)")
+                                .fontWeight(.medium)
+                            if case .updateAvailable(let newVer, _, _, _) = vm.updateStatus {
+                                Text("⭐️ Version v\(newVer) is available!")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            } else {
+                                Text("✓ You are running the latest version.")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                            }
+                        }
+                        Spacer()
+
+                        if case .updateAvailable = vm.updateStatus {
+                            Button("Install & Update Now") {
+                                vm.installUpdate()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else {
+                            Button("Check for Updates") {
+                                vm.checkForUpdates()
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                }
+            }
 
             // ── Safe Recovery ─────────────────────────────────────────────────
             Section("Emergency Recovery") {
@@ -344,6 +387,13 @@ private struct SettingsView: View {
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
+            }
+
+            // ── Quit Application ──────────────────────────────────────────────
+            Section {
+                Button("Quit Trackpad Toggle", role: .destructive) {
+                    NSApp.terminate(nil)
+                }
             }
         }
         .formStyle(.grouped)
@@ -501,9 +551,33 @@ final class SettingsViewModel: ObservableObject {
     var recorderDisplayText: String {
         isRecording ? "Press keys…" : shortcutDescription
     }
+    var isTrackpadDisabled: Bool {
+        (NSApp.delegate as? AppDelegate)?.trackpadController.state == .disabled
+    }
+
+    var currentVersion: String {
+        UpdateManager.shared.currentVersion
+    }
+
+    var updateStatus: UpdateManager.UpdateStatus {
+        UpdateManager.shared.status
+    }
+
+    func toggleTrackpad() {
+        (NSApp.delegate as? AppDelegate)?.toggleTrackpad()
+        refresh()
+    }
+
+    func checkForUpdates() {
+        (NSApp.delegate as? AppDelegate)?.checkForUpdatesManual()
+        refresh()
+    }
+
+    func installUpdate() {
+        (NSApp.delegate as? AppDelegate)?.promptUpdate()
+    }
 
     func refresh() {
-        axGranted = PermissionsManager.shared.hasAccessibility
         shortcutDescription = Preferences.shared.hotKeyDescription
         launchAtLogin = LaunchAtLoginManager.shared.isEnabled
         blockCursorAndGestures = Preferences.shared.blockCursorAndGestures
