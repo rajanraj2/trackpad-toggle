@@ -1,0 +1,163 @@
+name: Release on Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Release type (major, minor, patch)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Automatic Release & Tap Bump
+    if: |
+      (github.event.pull_request.merged == true && (
+        contains(github.event.pull_request.labels.*.name, 'release:patch') ||
+        contains(github.event.pull_request.labels.*.name, 'release:minor') ||
+        contains(github.event.pull_request.labels.*.name, 'release:major') ||
+        contains(github.event.pull_request.labels.*.name, 'patch') ||
+        contains(github.event.pull_request.labels.*.name, 'minor') ||
+        contains(github.event.pull_request.labels.*.name, 'major')
+      )) || github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Determine Version Bump
+        id: semver
+        run: |
+          python3 - << 'EOF'
+          import json
+          import os
+          import re
+          import subprocess
+
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+          bump_type = "patch"
+
+          if event_name == "workflow_dispatch":
+              bump_type = os.environ.get("INPUT_BUMP", "patch")
+          else:
+              labels = json.loads(os.environ.get("PR_LABELS", "[]"))
+              label_names = [l.get("name", "") for l in labels]
+              
+              if "release:major" in label_names or "major" in label_names:
+                  bump_type = "major"
+              elif "release:minor" in label_names or "minor" in label_names:
+                  bump_type = "minor"
+              elif "release:patch" in label_names or "patch" in label_names:
+                  bump_type = "patch"
+
+          subprocess.run(["git", "fetch", "--tags"], check=False)
+          tag_output = subprocess.check_output(["git", "tag", "-l", "v*"], text=True)
+          tags = [t.strip() for t in tag_output.splitlines() if re.match(r"^v\d+\.\d+\.\d+$", t.strip())]
+
+          def parse_semver(tag):
+              m = re.match(r"^v(\d+)\.(\d+)\.(\d+)$", tag)
+              return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+
+          if tags:
+              latest_tag = max(tags, key=parse_semver)
+          else:
+              latest_tag = "v1.0.0"
+
+          major, minor, patch = parse_semver(latest_tag)
+
+          if bump_type == "major":
+              next_tag = f"v{major + 1}.0.0"
+          elif bump_type == "minor":
+              next_tag = f"v{major}.{minor + 1}.0"
+          else:
+              next_tag = f"v{major}.{minor}.{patch + 1}"
+
+          new_version = next_tag.lstrip("v")
+
+          print(f"Latest tag: {latest_tag}")
+          print(f"Bump type: {bump_type}")
+          print(f"Next tag: {next_tag}")
+          print(f"New version: {new_version}")
+
+          output_path = os.environ.get("GITHUB_OUTPUT")
+          if output_path:
+              with open(output_path, "a") as f:
+                  f.write(f"latest_tag={latest_tag}\n")
+                  f.write(f"next_tag={next_tag}\n")
+                  f.write(f"new_version={new_version}\n")
+                  f.write(f"bump_type={bump_type}\n")
+          EOF
+        env:
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
+          INPUT_BUMP: ${{ github.event.inputs.bump }}
+
+      - name: Build Application and Package DMG
+        run: |
+          chmod +x build.sh scripts/create_dmg.sh
+          bash build.sh --dmg
+
+      - name: Push Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.semver.outputs.next_tag }}"
+          git push origin "${{ steps.semver.outputs.next_tag }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semver.outputs.next_tag }}
+          name: Trackpad Toggle ${{ steps.semver.outputs.next_tag }}
+          body: |
+            ## What's Changed
+            ${{ github.event.pull_request.title && format('- {0} (#{1}) by @{2}', github.event.pull_request.title, github.event.pull_request.number, github.event.pull_request.user.login) || '- Manual release' }}
+            
+            **Full Changelog**: https://github.com/rajanraj2/trackpad-toggle/compare/${{ steps.semver.outputs.latest_tag }}...${{ steps.semver.outputs.next_tag }}
+          files: build/TrackpadToggle.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew Tap (rajanraj2/homebrew-tap)
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
+            echo "⚠️ HOMEBREW_TAP_TOKEN secret is not set. Skipping Homebrew tap update."
+            exit 0
+          fi
+
+          NEW_VERSION="${{ steps.semver.outputs.new_version }}"
+          NEW_SHA=$(shasum -a 256 build/TrackpadToggle.dmg | awk '{print $1}')
+          echo "Updating Homebrew Tap for Trackpad Toggle v${NEW_VERSION} (SHA-256: ${NEW_SHA})…"
+
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/rajanraj2/homebrew-tap.git" tap-repo
+
+          perl -pi -e "s/version \".*\"/version \"${NEW_VERSION}\"/g" tap-repo/Casks/trackpad-toggle.rb
+          perl -pi -e "s/sha256 \".*\"/sha256 \"${NEW_SHA}\"/g" tap-repo/Casks/trackpad-toggle.rb
+
+          echo "Updated Cask file:"
+          cat tap-repo/Casks/trackpad-toggle.rb
+
+          cd tap-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/trackpad-toggle.rb
+          git commit -m "Bump trackpad-toggle to v${NEW_VERSION}" || echo "No changes to commit"
+          git push origin main
+          echo "✅ Successfully updated rajanraj2/homebrew-tap to v${NEW_VERSION}!"

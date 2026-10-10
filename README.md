@@ -210,6 +210,22 @@ Run these after building and launching the app:
 - [ ] Settings → shortcut recorder → new combo takes effect without relaunch.
 - [ ] Revoking Accessibility → permission warning appears in menu.
 
+## Automated Releases & SemVer
+
+Releases are fully automated via GitHub Actions using Pull Request labels:
+
+| Label | Release Type | Example Bump |
+|---|---|---|
+| `release:patch` or `patch` | Bug fixes, small tweaks | `v1.0.0` → `v1.0.1` |
+| `release:minor` or `minor` | New features, enhancements | `v1.0.0` → `v1.1.0` |
+| `release:major` or `major` | Breaking changes | `v1.0.0` → `v2.0.0` |
+| *(none)* | Docs, chore, internal refactoring | No release created |
+
+### Release Flow
+1. Add one of the labels (`release:patch`, `release:minor`, or `release:major`) to your Pull Request.
+2. Once CI passes, click **Merge pull request**.
+3. GitHub Actions automatically calculates the next version, pushes the tag (`vX.Y.Z`), creates the GitHub Release with `TrackpadToggle.dmg`, and updates `Casks/trackpad-toggle.rb` in [rajanraj2/homebrew-tap](https://github.com/rajanraj2/homebrew-tap).
+
 ## Limitations
 
 1. **System gestures not blocked** — Mission Control, Exposé, Launchpad swipes bypass CGEventTap.
