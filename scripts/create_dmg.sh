@@ -57,22 +57,12 @@ ln -s /Applications "$STAGING_DIR/Applications"
 # ── 3. Build Disk Image ──────────────────────────────────────────────────────
 echo "▶  Creating compressed Disk Image ($DMG_PATH)…"
 
-if command -v diskutil >/dev/null && diskutil help image create >/dev/null 2>&1; then
-    # Modern macOS (macOS 15+ / 26+ / 27+)
-    diskutil image create from \
-        --format UDZO \
-        --volname "$VOLUME_NAME" \
-        "$STAGING_DIR" \
-        "$DMG_PATH" >/dev/null
-else
-    # Classic macOS fallback
-    hdiutil create \
-        -volname "$VOLUME_NAME" \
-        -srcfolder "$STAGING_DIR" \
-        -ov \
-        -format UDZO \
-        "$DMG_PATH" >/dev/null
-fi
+hdiutil create \
+    -volname "$VOLUME_NAME" \
+    -srcfolder "$STAGING_DIR" \
+    -ov \
+    -format UDZO \
+    "$DMG_PATH" >/dev/null
 
 rm -rf "$STAGING_DIR"
 
@@ -81,12 +71,7 @@ echo "▶  Verifying generated DMG integrity…"
 VERIFY_MOUNT="/tmp/trackpad_toggle_dmg_verify_$$"
 mkdir -p "$VERIFY_MOUNT"
 
-ATTACH_DEV=""
-if command -v diskutil >/dev/null && diskutil help image attach >/dev/null 2>&1; then
-    ATTACH_DEV="$(diskutil image attach --mountPoint "$VERIFY_MOUNT" "$DMG_PATH" 2>/dev/null | grep -E '^/dev/' | head -1 | awk '{print $1}' || true)"
-else
-    ATTACH_DEV="$(hdiutil attach -mountpoint "$VERIFY_MOUNT" -nobrowse -readonly "$DMG_PATH" 2>/dev/null | grep -E '^/dev/' | head -1 | awk '{print $1}' || true)"
-fi
+ATTACH_DEV="$(hdiutil attach -mountpoint "$VERIFY_MOUNT" -nobrowse -readonly "$DMG_PATH" 2>/dev/null | grep -E '^/dev/' | head -1 | awk '{print $1}' || true)"
 
 if [[ -d "$VERIFY_MOUNT/TrackpadToggle.app" && -L "$VERIFY_MOUNT/Applications" ]]; then
     echo "✓ Verified DMG structure: contains TrackpadToggle.app and Applications symlink"
