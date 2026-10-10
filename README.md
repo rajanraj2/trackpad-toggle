@@ -1,8 +1,8 @@
 # Trackpad Toggle
 
 [![Release](https://img.shields.io/github/v/release/rajanraj2/trackpad-toggle?color=blue&label=Latest%20Release)](https://github.com/rajanraj2/trackpad-toggle/releases/latest)
+[![Homebrew Cask](https://img.shields.io/badge/Homebrew-trackpad--toggle-orange?logo=homebrew)](https://github.com/rajanraj2/trackpad-toggle/tree/main/Casks)
 [![Download DMG](https://img.shields.io/badge/Download-TrackpadToggle.dmg-success?logo=apple&style=for-the-badge)](https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg)
-
 A lightweight native macOS menu-bar utility that lets you disable and re-enable your MacBook's built-in trackpad using a configurable global keyboard shortcut.
 
 ---
@@ -22,9 +22,29 @@ A lightweight native macOS menu-bar utility that lets you disable and re-enable 
 
 ## Installation Options
 
-### Option 1: macOS Disk Image (.dmg) — Recommended for Users
+### Option 1: Install via Homebrew (Fastest for Terminal / Developers)
 
-The easiest way to install Trackpad Toggle on any Mac:
+Install Trackpad Toggle as a native Homebrew Cask:
+
+```bash
+# Tap this repository and install Trackpad Toggle
+brew tap rajanraj2/trackpad-toggle https://github.com/rajanraj2/trackpad-toggle
+brew install --cask trackpad-toggle
+```
+
+To update in the future:
+```bash
+brew upgrade --cask trackpad-toggle
+```
+
+To cleanly uninstall:
+```bash
+brew uninstall --cask trackpad-toggle
+```
+
+### Option 2: macOS Disk Image (.dmg) — No Terminal Required
+
+The easiest way to install Trackpad Toggle on any Mac without terminal:
 
 1. Download **`TrackpadToggle.dmg`** from the [Releases](https://github.com/rajanraj2/trackpad-toggle/releases) page.
 2. Double-click the `.dmg` file in Finder to open it.
@@ -34,7 +54,7 @@ The easiest way to install Trackpad Toggle on any Mac:
 
 > **Gatekeeper Note (First Launch)**: Since this is an open-source, ad-hoc signed app, macOS may display a standard security notice on first open. Simply **right-click (Control-click) `TrackpadToggle.app` → select Open → click Open** (or go to *System Settings → Privacy & Security → Open Anyway*). You only need to do this once.
 
-### Option 2: Finder Double-Click Installer (`Install.command`)
+### Option 3: Finder Double-Click Installer (`Install.command`)
 
 If you cloned this repository locally:
 1. In Finder, double-click **`Install.command`**.

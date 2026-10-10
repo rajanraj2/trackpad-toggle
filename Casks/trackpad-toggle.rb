@@ -7,7 +7,7 @@ cask "trackpad-toggle" do
   desc "Menu-bar utility to disable and re-enable MacBook trackpad via global shortcut"
   homepage "https://github.com/rajanraj2/trackpad-toggle"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "TrackpadToggle.app"
 
