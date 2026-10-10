@@ -61,7 +61,12 @@ swiftc \
 
 echo "▶  Copying resources…"
 cp "$RES/Info.plist" "$CONTENTS/Info.plist"
-
+if [[ -f "$RES/AppIcon.icns" ]]; then
+  cp "$RES/AppIcon.icns" "$CONTENTS/Resources/AppIcon.icns"
+fi
+if [[ -f "$RES/AppIcon.png" ]]; then
+  cp "$RES/AppIcon.png" "$CONTENTS/Resources/AppIcon.png"
+fi
 # ── Ad-hoc sign (required to launch on macOS without notarisation) ────────────
 echo "▶  Ad-hoc signing…"
 codesign --force --sign - \

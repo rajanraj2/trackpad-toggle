@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Master Drop Shadow for App Squircle -->
+    <filter id="app-shadow" x="-10%" y="-6%" width="120%" height="124%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+      <feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#000000" flood-opacity="0.45" />
+      <feDropShadow dx="0" dy="48" stdDeviation="56" flood-color="#000208" flood-opacity="0.6" />
+    </filter>
+
+    <!-- Trackpad Slab Elevation Shadow -->
+    <filter id="trackpad-depth" x="-20%" y="-20%" width="140%" height="148%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.65" />
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+
+    <!-- Intense Laser Glow -->
+    <filter id="cyan-laser-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur1" />
+      <feGaussianBlur stdDeviation="16" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Coral LED Indicator Glow -->
+    <filter id="coral-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Squircle Body Gradient (Obsidian to Midnight) -->
+    <linearGradient id="squircle-base" x1="512" y1="100" x2="512" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#151B28" />
+      <stop offset="40%" stop-color="#0B0F19" />
+      <stop offset="100%" stop-color="#04060A" />
+    </linearGradient>
+
+    <!-- Outer Bevel Stroke Gradient -->
+    <linearGradient id="outer-stroke-grad" x1="200" y1="100" x2="824" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4B5E80" stop-opacity="0.6" />
+      <stop offset="35%" stop-color="#1E2738" stop-opacity="0.3" />
+      <stop offset="70%" stop-color="#0E131E" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#28354D" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Deep Ambient Cyber Radiance -->
+    <radialGradient id="cyan-aura" cx="640" cy="380" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.16" />
+      <stop offset="45%" stop-color="#00B0FF" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#00E5FF" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="coral-aura" cx="380" cy="620" r="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF5252" stop-opacity="0.09" />
+      <stop offset="60%" stop-color="#FF5252" stop-opacity="0.01" />
+      <stop offset="100%" stop-color="#FF5252" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Trackpad Segment 1 (Active / Cyan Illuminated Glass) -->
+    <linearGradient id="active-glass" x1="450" y1="260" x2="750" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A283C" />
+      <stop offset="60%" stop-color="#0F1726" />
+      <stop offset="100%" stop-color="#080E18" />
+    </linearGradient>
+
+    <!-- Trackpad Segment 2 (Dormant Obsidian Glass) -->
+    <linearGradient id="dormant-glass" x1="250" y1="420" x2="520" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#121620" />
+      <stop offset="50%" stop-color="#090C13" />
+      <stop offset="100%" stop-color="#05070B" />
+    </linearGradient>
+
+    <!-- Glass Rim Highlight Gradients -->
+    <linearGradient id="active-rim" x1="400" y1="280" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.75" />
+      <stop offset="50%" stop-color="#00B0FF" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#00E5FF" stop-opacity="0.05" />
+    </linearGradient>
+
+    <linearGradient id="dormant-rim" x1="200" y1="400" x2="500" y2="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4E5D78" stop-opacity="0.4" />
+      <stop offset="70%" stop-color="#202738" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#FF5252" stop-opacity="0.3" />
+    </linearGradient>
+
+    <!-- Laser Blade Toggle Gradients -->
+    <linearGradient id="laser-beam" x1="720" y1="304" x2="304" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF" />
+      <stop offset="25%" stop-color="#80F3FF" />
+      <stop offset="50%" stop-color="#FFFFFF" />
+      <stop offset="75%" stop-color="#80F3FF" />
+      <stop offset="100%" stop-color="#00E5FF" />
+    </linearGradient>
+
+    <linearGradient id="laser-glow-gradient" x1="730" y1="294" x2="294" y2="730" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#00B0FF" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#00E5FF" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Clip Paths for the Bisected Trackpad (Cut along 45-degree diagonal) -->
+    <!-- Trackpad geometry: x=202, y=282, w=620, h=460, rx=48 -->
+    <!-- Diagonal split plane passes through (512, 512) along x + y = 1024 with a clean 10px spacing gap -->
+    <clipPath id="top-right-clip">
+      <!-- Keep region where x + y >= 1032 -->
+      <polygon points="1032,0 1024,0 1024,1024 0,1024 0,1032 1032,1032" />
+    </clipPath>
+    
+    <clipPath id="bottom-left-clip">
+      <!-- Keep region where x + y <= 1016 -->
+      <polygon points="0,0 1016,0 0,1016" />
+    </clipPath>
+
+    <!-- Single Trackpad Base Geometry for clipping -->
+    <clipPath id="trackpad-shape">
+      <rect x="202" y="282" width="620" height="460" rx="46" />
+    </clipPath>
+  </defs>
+
+  <!-- ================= ICON CANVAS ================= -->
+  <!-- macOS Icon Squircle Base with Shadow -->
+  <rect x="100" y="100" width="824" height="824" rx="225" fill="url(#squircle-base)" filter="url(#app-shadow)" />
+
+  <!-- Obsidian Canvas Ambient Lighting Overlays -->
+  <rect x="100" y="100" width="824" height="824" rx="225" fill="url(#cyan-aura)" />
+  <rect x="100" y="100" width="824" height="824" rx="225" fill="url(#coral-aura)" />
+
+  <!-- Squircle Ultra-thin Precision Inner/Outer Edge Highlights -->
+  <rect x="100" y="100" width="824" height="824" rx="225" fill="none" stroke="url(#outer-stroke-grad)" stroke-width="2.5" />
+  <rect x="101.5" y="101.5" width="821" height="821" rx="223.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1" />
+
+  <!-- Top Glass Sheen Arc -->
+  <path d="M 160 180 C 260 125, 400 104, 512 104 C 624 104, 764 125, 864 180 C 760 148, 630 134, 512 134 C 394 134, 264 148, 160 180 Z" fill="#FFFFFF" opacity="0.07" />
+
+  <!-- ================= HARDWARE TRACKPAD LAYER ================= -->
+  <!-- Trackpad Shallow Well / Inset Recess Contour -->
+  <rect x="198" y="278" width="628" height="468" rx="50" fill="#030407" opacity="0.9" stroke="#000000" stroke-width="2" />
+  <rect x="198" y="278" width="628" height="468" rx="50" fill="none" stroke="#253248" stroke-opacity="0.25" stroke-width="1" />
+
+  <!-- TRACKPAD SEGMENT: ACTIVE (TOP-RIGHT) -->
+  <g clipPath="url(#top-right-clip)">
+    <!-- Base Plate -->
+    <rect x="202" y="282" width="620" height="460" rx="46" fill="url(#active-glass)" filter="url(#trackpad-depth)" />
+    <!-- Segment Inner Glow/Refraction -->
+    <rect x="202" y="282" width="620" height="460" rx="46" fill="none" stroke="url(#active-rim)" stroke-width="2" />
+    
+    <!-- Capacitive Touch Wave Resonators (Concentric Haptic Ripples) -->
+    <g opacity="0.45">
+      <circle cx="620" cy="420" r="54" fill="none" stroke="#00E5FF" stroke-width="1.5" stroke-opacity="0.5" stroke-dasharray="8 6" />
+      <circle cx="620" cy="420" r="105" fill="none" stroke="#00E5FF" stroke-width="1.25" stroke-opacity="0.3" stroke-dasharray="16 10" />
+      <circle cx="620" cy="420" r="162" fill="none" stroke="#00B0FF" stroke-width="1" stroke-opacity="0.15" />
+      <circle cx="620" cy="420" r="225" fill="none" stroke="#00E5FF" stroke-width="0.75" stroke-opacity="0.08" />
+    </g>
+
+    <!-- Active Touch Center Soft Glow Reticle -->
+    <circle cx="620" cy="420" r="16" fill="#00E5FF" opacity="0.15" />
+    <circle cx="620" cy="420" r="4" fill="#00E5FF" opacity="0.8" />
+  </g>
+
+  <!-- TRACKPAD SEGMENT: DORMANT (BOTTOM-LEFT) -->
+  <g clipPath="url(#bottom-left-clip)">
+    <!-- Base Plate -->
+    <rect x="202" y="282" width="620" height="460" rx="46" fill="url(#dormant-glass)" filter="url(#trackpad-depth)" />
+    <!-- Segment Subtle Matte Rim -->
+    <rect x="202" y="282" width="620" height="460" rx="46" fill="none" stroke="url(#dormant-rim)" stroke-width="1.5" />
+
+    <!-- Frosted Matte Noise / Micropattern Texture (Stealth Input OFF) -->
+    <path d="M 230 680 L 450 460 M 260 710 L 490 480 M 290 730 L 510 510" stroke="#FFFFFF" stroke-opacity="0.02" stroke-width="1.5" stroke-linecap="round" />
+
+    <!-- Disconnected Indicator LED Subsystem -->
+    <g transform="translate(352, 600)">
+      <!-- LED Bezel Bore Hole -->
+      <circle cx="0" cy="0" r="9" fill="#05070B" stroke="#1D2432" stroke-width="1.5" />
+      <!-- Coral Glow & Core Pill -->
+      <circle cx="0" cy="0" r="4.5" fill="#FF5252" filter="url(#coral-glow)" />
+      <circle cx="0" cy="0" r="3" fill="#FFA4A4" />
+    </g>
+
+    <!-- Tactile Baseline Divider (MacBook-style lower click hint) -->
+    <line x1="430" y1="738" x2="430" y2="742" stroke="#37435B" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+  </g>
+
+  <!-- ================= THE TOGGLE BISECTION & POWER SLASH ================= -->
+  <!-- Bevel Edges along the Diagonal Gap (Revealing 3D Thickness of Trackpad Glass) -->
+  <!-- Top-Right Edge Highlight -->
+  <line x1="742" y1="290" x2="290" y2="742" stroke="#00E5FF" stroke-opacity="0.4" stroke-width="1.5" stroke-linecap="round" />
+  <!-- Bottom-Left Edge Shadow / Dark Rim -->
+  <line x1="726" y1="274" x2="274" y2="726" stroke="#000000" stroke-opacity="0.8" stroke-width="3" stroke-linecap="round" />
+  <line x1="727" y1="275" x2="275" y2="727" stroke="#2B364A" stroke-opacity="0.4" stroke-width="1" stroke-linecap="round" />
+
+  <!-- Laser Plasma Outer Glow Slashes -->
+  <line x1="734" y1="290" x2="290" y2="734" stroke="url(#laser-glow-gradient)" stroke-width="24" stroke-linecap="round" opacity="0.3" filter="url(#cyan-laser-glow)" />
+  <line x1="728" y1="296" x2="296" y2="728" stroke="url(#laser-glow-gradient)" stroke-width="10" stroke-linecap="round" opacity="0.7" filter="url(#cyan-laser-glow)" />
+
+  <!-- Ultra-sharp Precision Core Laser Slash -->
+  <line x1="724" y1="300" x2="300" y2="724" stroke="url(#laser-beam)" stroke-width="3.5" stroke-linecap="round" />
+  <!-- Intense White Focal Core -->
+  <line x1="570" y1="454" x2="454" y2="570" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+
+  <!-- ================= CENTRAL DYNAMIC POWER TOGGLE EMBLEM ================= -->
+  <!-- Sits at Center (512, 512), seamlessly bridging the cut states -->
+  <g transform="translate(512, 512)">
+    <!-- Backing Glass Disc for Contrast & Depth -->
+    <circle cx="0" cy="0" r="104" fill="#080C14" fill-opacity="0.82" stroke="#1C2638" stroke-width="1.5" filter="url(#trackpad-depth)" />
+    
+    <!-- Subtle Inner Gradient Depth Ring -->
+    <circle cx="0" cy="0" r="92" fill="none" stroke="#FFFFFF" stroke-opacity="0.04" stroke-width="12" />
+
+    <!-- POWER SYMBOL: INACTIVE ARC (Left/Bottom Half) -->
+    <!-- Power Circle Arc ~270 degrees, with gap for top switch-bar -->
+    <!-- Left hemisphere: Muted graphite with red ember tint -->
+    <path d="M 0 -64 A 64 64 0 0 0 -45 45" fill="none" stroke="#3A465E" stroke-width="9" stroke-linecap="round" />
+    <path d="M -45 45 A 64 64 0 0 0 -18 61" fill="none" stroke="#FF5252" stroke-width="9" stroke-linecap="round" stroke-opacity="0.85" filter="url(#coral-glow)" />
+
+    <!-- POWER SYMBOL: ACTIVE ARC (Right/Top Half) -->
+    <!-- Right hemisphere: High-energy electric cyan radiance -->
+    <path d="M 0 -64 A 64 64 0 0 1 45 45" fill="none" stroke="#00E5FF" stroke-width="9" stroke-linecap="round" filter="url(#cyan-laser-glow)" />
+    <path d="M 0 -64 A 64 64 0 0 1 45 45" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+    <path d="M 45 45 A 64 64 0 0 1 18 61" fill="none" stroke="#00E5FF" stroke-width="9" stroke-linecap="round" opacity="0.6" />
+
+    <!-- Central Vertical Power Toggle Stile / Line -->
+    <!-- Top half (Active State Switch) -->
+    <line x1="0" y1="-78" x2="0" y2="-12" stroke="#00E5FF" stroke-width="9" stroke-linecap="round" filter="url(#cyan-laser-glow)" />
+    <line x1="0" y1="-78" x2="0" y2="-12" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+
+    <!-- Center Pivot Fulcrum / Power Apex Dot -->
+    <circle cx="0" cy="0" r="10" fill="#070B12" stroke="#00E5FF" stroke-width="2.5" />
+    <circle cx="0" cy="0" r="4" fill="#FFFFFF" />
+
+    <!-- Diagonal Power Slash Intersect Pips -->
+    <circle cx="-58" cy="58" r="3.5" fill="#00E5FF" filter="url(#cyan-laser-glow)" />
+    <circle cx="58" cy="-58" r="3.5" fill="#FFFFFF" filter="url(#cyan-laser-glow)" />
+  </g>
+
+  <!-- ================= FINAL MACINTOSH HARDWARE POLISH ================= -->
+  <!-- Top Corner Specular Tick on Squircle Edge -->
+  <path d="M 240 102 C 200 104, 155 120, 132 144 C 124 152, 114 168, 108 184" fill="none" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="2" stroke-linecap="round" />
+</svg>

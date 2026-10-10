@@ -16,6 +16,8 @@
     <string>TrackpadToggle</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <!-- Suppress Dock icon — this is a menu-bar-only app -->

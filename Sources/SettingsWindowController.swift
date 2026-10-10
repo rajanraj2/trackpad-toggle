@@ -56,6 +56,34 @@ private struct SettingsView: View {
 
     var body: some View {
         Form {
+            // ── App Brand Header ──────────────────────────────────────────────
+            HStack(spacing: 16) {
+                if let iconImage = loadAppIcon() {
+                    Image(nsImage: iconImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 56, height: 56)
+                        .cornerRadius(12)
+                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                } else {
+                    Image(systemName: "hand.point.up.left.fill")
+                        .font(.system(size: 36))
+                        .foregroundColor(.accentColor)
+                        .frame(width: 56, height: 56)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Trackpad Toggle")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Text("macOS Built-in Trackpad Disabler & Shortcut Controller")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            }
+            .padding(.vertical, 4)
+
             // ── Status Overview ───────────────────────────────────────────────
             Section("Status") {
                 LabeledContent("Trackpad Input") {
@@ -290,6 +318,18 @@ private struct SettingsView: View {
         .padding()
         .frame(minWidth: 480, minHeight: 520)
         .onAppear { vm.refresh() }
+    }
+
+    private func loadAppIcon() -> NSImage? {
+        if let path = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
+           let img = NSImage(contentsOfFile: path) {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: "AppIcon", ofType: "png"),
+           let img = NSImage(contentsOfFile: path) {
+            return img
+        }
+        return NSImage(named: NSImage.applicationIconName)
     }
 }
 
