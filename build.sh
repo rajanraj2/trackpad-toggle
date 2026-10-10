@@ -102,6 +102,33 @@ for arg in "$@"; do
       rm -rf "$DMG_STAGING"
       echo "✅  Disk image created: $DMG_OUT"
       ;;
+    --pkg)
+      PKG_OUT="$BUILD/TrackpadToggle.pkg"
+      PKG_PAYLOAD="$BUILD/pkg_payload"
+      PKG_SCRIPTS="$BUILD/pkg_scripts"
+      rm -rf "$PKG_PAYLOAD" "$PKG_SCRIPTS" "$PKG_OUT"
+      mkdir -p "$PKG_PAYLOAD" "$PKG_SCRIPTS"
+      cp -R "$APP" "$PKG_PAYLOAD/TrackpadToggle.app"
+      cat > "$PKG_SCRIPTS/postinstall" << 'EOF'
+#!/bin/bash
+CONSOLE_USER=$(stat -f "%Su" /dev/console)
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
+    sudo -u "$CONSOLE_USER" open /Applications/TrackpadToggle.app 2>/dev/null || true
+fi
+exit 0
+EOF
+      chmod +x "$PKG_SCRIPTS/postinstall"
+      echo "▶  Building macOS Installer Package ($PKG_OUT)…"
+      pkgbuild \
+        --root "$PKG_PAYLOAD" \
+        --install-location /Applications \
+        --identifier com.powertools.trackpadtoggle \
+        --version 1.0.0 \
+        --scripts "$PKG_SCRIPTS" \
+        "$PKG_OUT" >/dev/null
+      rm -rf "$PKG_PAYLOAD" "$PKG_SCRIPTS"
+      echo "✅  Installer package created: $PKG_OUT"
+      ;;
     --open)
       echo "▶  Opening app…"
       open "$APP"
