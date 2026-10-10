@@ -8,13 +8,27 @@ A lightweight macOS menu-bar utility that lets you disable and re-enable the bui
 - MacBook with built-in trackpad (Apple Silicon confirmed)
 - Xcode Command Line Tools (`xcode-select --install`)
 
-## Build
+## Installation & Starting Without Terminal
 
+### Option A: Spotlight, Launchpad, or Finder (Recommended)
+1. In Finder, double-click **`Install.command`** in the project folder (or run `bash build.sh --install`).
+2. This compiles and places **Trackpad Toggle** directly into your **Applications** folder.
+3. From now on, launch it just like any native Mac app:
+   - **Spotlight**: Press **⌘ + Space**, type `Trackpad Toggle`, and hit Enter.
+   - **Launchpad**: Click the Trackpad Toggle icon.
+   - **Finder**: Open `/Applications` and double-click `TrackpadToggle.app`.
+
+### Option B: Automatic Startup (Zero Clicks Required)
+Once opened for the first time:
+1. Click the menu-bar icon → check **Launch at Login** (or toggle it in Settings).
+2. **You never have to start the app manually again.** It starts automatically in the background every time you turn on or log into your Mac.
+
+### Option C: Shareable Disk Image (DMG) for Other Users
+If you want to share the app with users who don't want to touch developer tools:
 ```bash
-bash build.sh          # produces build/TrackpadToggle.app
-bash build.sh --open   # build and launch immediately
+bash build.sh --dmg
 ```
-
+This generates **`build/TrackpadToggle.dmg`**. Any user can double-click the `.dmg` in Finder and drag `TrackpadToggle.app` to their Applications folder without using Terminal at all.
 ## First Launch & Permissions
 
 macOS requires two TCC permissions before the event tap can suppress trackpad input.

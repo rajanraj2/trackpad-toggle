@@ -76,8 +76,35 @@ echo ""
 echo "First launch: macOS will ask for Accessibility and Input Monitoring."
 echo "Grant both in System Settings → Privacy & Security."
 
-# ── Optional --open flag ─────────────────────────────────────────────────────
-if [[ "${1:-}" == "--open" ]]; then
-  echo "▶  Opening app…"
-  open "$APP"
-fi
+# ── Optional flags ──────────────────────────────────────────────────────────
+for arg in "$@"; do
+  case "$arg" in
+    --install)
+      TARGET_DIR="/Applications"
+      if ! cp -R "$APP" "$TARGET_DIR/TrackpadToggle.app" 2>/dev/null; then
+        TARGET_DIR="$HOME/Applications"
+        mkdir -p "$TARGET_DIR"
+        cp -R "$APP" "$TARGET_DIR/TrackpadToggle.app"
+      fi
+      echo "▶  Installed to: $TARGET_DIR/TrackpadToggle.app"
+      echo "   You can now launch it anytime from Spotlight (⌘ + Space) or Finder!"
+      open "$TARGET_DIR/TrackpadToggle.app"
+      ;;
+    --dmg)
+      DMG_OUT="$BUILD/TrackpadToggle.dmg"
+      DMG_STAGING="$BUILD/dmg_root"
+      rm -rf "$DMG_STAGING" "$DMG_OUT"
+      mkdir -p "$DMG_STAGING"
+      cp -R "$APP" "$DMG_STAGING/TrackpadToggle.app"
+      ln -s /Applications "$DMG_STAGING/Applications"
+      echo "▶  Creating Disk Image ($DMG_OUT)…"
+      hdiutil create -volname "Trackpad Toggle" -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG_OUT" >/dev/null
+      rm -rf "$DMG_STAGING"
+      echo "✅  Disk image created: $DMG_OUT"
+      ;;
+    --open)
+      echo "▶  Opening app…"
+      open "$APP"
+      ;;
+  esac
+done
