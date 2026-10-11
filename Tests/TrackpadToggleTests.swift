@@ -407,9 +407,6 @@ Run these after launching TrackpadToggle.app. Mark each ✅/❌.
 12. [ ] Revoke Accessibility in System Settings → relaunch → warning shown.
 13. [ ] Settings window opens → shortcut recorder accepts new combo → takes effect.
 14. [ ] Reset to Defaults restores ⌃⌥⌘T.
-
-KNOWN LIMITATION: System multitouch gestures (Mission Control 4-finger swipe,
-Launchpad pinch) are NOT suppressed. They bypass CGEventTap.
 """
 
 print(manualChecklist)
