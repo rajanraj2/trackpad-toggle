@@ -299,11 +299,19 @@
 
   // ── 7. Client Observability: Performance & Conversion Event Tracking ──────
   function recordEvent(category, action, label) {
-    // Dispatches to custom event and any configured telemetry beacon (e.g. Cloudflare Web Analytics)
+    // 1. Dispatch to global dataLayer if analytics beacon (e.g. Cloudflare / GA) is present
     if (window.dataLayer && Array.isArray(window.dataLayer)) {
       window.dataLayer.push({ event: action, category, label });
     }
-    // Core Web Vitals and user conversion logging
+
+    // 2. Persist conversion event counters in CounterAPI (viewable via JSON API & dashboard)
+    if (action === 'Download_DMG_Click') {
+      fetch('https://counterapi.com/api/trackpad-toggle.rajanraj.me/click/download-dmg').catch(() => {});
+    } else if (action === 'Copy_Command_Click') {
+      const key = label === 'brew' ? 'copy-brew' : 'copy-npx';
+      fetch(`https://counterapi.com/api/trackpad-toggle.rajanraj.me/click/${key}`).catch(() => {});
+    }
+
     console.debug(`[Telemetry] ${category} -> ${action}: ${label || ''}`);
   }
 
@@ -323,7 +331,6 @@
       recordEvent('Engagement', 'Copy_Command_Click', tabName);
     });
   }
-
   // Track page load performance (Navigation Timing API)
   window.addEventListener('load', () => {
     initVisitorCounter();
