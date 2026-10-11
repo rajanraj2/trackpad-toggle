@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://rajanraj2.github.io/trackpad-toggle"><img src="https://img.shields.io/badge/Website-trackpad--toggle-00E5FF?logo=safari&logoColor=black" alt="Official Website"></a>
+  <a href="https://trackpad-toggle.rajanraj.me"><img src="https://img.shields.io/badge/Website-trackpad--toggle.rajanraj.me-00E5FF?logo=safari&logoColor=black" alt="Official Website"></a>
   <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest"><img src="https://img.shields.io/github/v/release/rajanraj2/trackpad-toggle?color=blue&label=Latest%20Release" alt="Release"></a>
   <a href="https://www.npmjs.com/package/trackpad-toggle"><img src="https://img.shields.io/badge/npm-trackpad--toggle-cb3837?logo=npm" alt="npm package"></a>
   <a href="https://github.com/rajanraj2/homebrew-tap"><img src="https://img.shields.io/badge/Homebrew-rajanraj2%2Ftap-orange?logo=homebrew" alt="Homebrew Cask"></a>
