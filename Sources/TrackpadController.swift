@@ -331,9 +331,17 @@ private func eventTapCallback(
     event: CGEvent,
     userInfo: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
-
     guard let ptr = userInfo else { return Unmanaged.passRetained(event) }
     let controller = Unmanaged<CGEventTapController>.fromOpaque(ptr).takeUnretainedValue()
+    // PASS THROUGH: If the trackpad is enabled AND the Settings window is focused,
+    // we pass events through to avoid accidental suppression by the mouse heuristic.
+    if controller.state == .enabled {
+        if (NSApp.mainWindow?.windowController is SettingsWindowController) ||
+           (NSApp.keyWindow?.windowController is SettingsWindowController) {
+            return Unmanaged.passRetained(event)
+        }
+    }
+    // Duplicate removed.
 
     // The OS disables a passive tap that times out. Re-enable and continue.
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
