@@ -54,7 +54,8 @@ protocol TrackpadControlling: AnyObject {
     /// Called when the configured full-lock (trackpad + keyboard) shortcut fires.
     var onFullLockShortcut: (() -> Void)? { get set }
     var onKeyboardUnlockShortcut: (() -> Void)? { get set }
-    /// Disable input with the specified lock mode.
+    /// Called when the configured trackpad-only shortcut fires inside event tap.
+    var onTrackpadShortcut: (() -> Void)? { get set }
     func disable(mode: LockState) throws
     /// Disable trackpad only (default).
     func disable() throws
@@ -119,7 +120,7 @@ final class CGEventTapController: TrackpadControlling {
         get { onFullLockShortcut }
         set { onFullLockShortcut = newValue }
     }
-
+    var onTrackpadShortcut: (() -> Void)?
     /// The installed mach port backing the CGEventTap.
     private var tapPort: CFMachPort?
     private var tapSource: CFRunLoopSource?
@@ -213,10 +214,10 @@ final class CGEventTapController: TrackpadControlling {
             try disable(mode: LockState(trackpadLocked: true, keyboardLocked: true))
         case .disabled(let locks):
             if locks.keyboardLocked {
-                // Both locked; unlock both
+                // Re-enable everything immediately
                 enable()
             } else {
-                // Only trackpad or neither locked; lock both
+                // Transition to locking both
                 try disable(mode: LockState(trackpadLocked: true, keyboardLocked: true))
             }
         case .transitioning:
@@ -229,10 +230,10 @@ final class CGEventTapController: TrackpadControlling {
             throw TrackpadError.unsupported
         }
     }
-
     func toggle() throws {
         try toggleTrackpadOnly()
     }
+
 
     // MARK: – Tap lifecycle
 
@@ -289,14 +290,27 @@ final class CGEventTapController: TrackpadControlling {
         }
     }
 
-    /// Consumes keyboard events while in full-lock mode and checks for the full-lock toggle chord.
+    /// Consumes keyboard events while in full-lock mode and checks for shortcuts.
     func handleKeyboardEvent(type: CGEventType, event: CGEvent) {
-        guard matchesFullLockShortcut(type: type, event: event) else { return }
-
-        DispatchQueue.main.async { [weak self] in
-            guard let self, case .disabled(let locks) = self.state, locks.keyboardLocked else { return }
-            self.onFullLockShortcut?()
+        if matchesFullLockShortcut(type: type, event: event) {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, case .disabled = self.state else { return }
+                self.onFullLockShortcut?()
+            }
+        } else if matchesTrackpadShortcut(type: type, event: event) {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, case .disabled = self.state else { return }
+                self.onTrackpadShortcut?()
+            }
         }
+    }
+
+    /// True when the event is exactly the configured trackpad chord on key-down.
+    func matchesTrackpadShortcut(type: CGEventType, event: CGEvent) -> Bool {
+        guard type == .keyDown else { return false }
+        let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
+        return keyCode == Preferences.shared.hotKeyCode
+            && carbonModifiers(from: event.flags) == Preferences.shared.hotKeyModifiers
     }
 
     /// True when the event is exactly the configured full-lock chord on key-down.
