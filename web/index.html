@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trackpad Toggle — The physical kill-switch for your MacBook trackpad</title>
+  <meta name="description" content="A lightweight native macOS menu-bar utility to disable and re-enable your MacBook trackpad using a configurable global shortcut. Freeze cursor drift and clean your Mac without accidental clicks.">
+  
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Trackpad Toggle — Clean your Mac. Keep your place.">
+  <meta property="og:description" content="A native macOS menu-bar utility that completely freezes cursor movement and gestures with ⌃⌥⌘T.">
+  <meta property="og:image" content="assets/AppIcon.png">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <link rel="icon" type="image/svg+xml" href="assets/AppIcon.svg">
+  <link rel="apple-touch-icon" href="assets/AppIcon.png">
+
+  <!-- Typography: Instrument Serif + Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background Ambient Glow -->
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Top Navigation / Brand Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand">
+        <img src="assets/AppIcon.svg" alt="Trackpad Toggle Logo" class="brand-icon" width="28" height="28">
+        <span class="brand-name">Trackpad Toggle</span>
+        <span class="version-badge">v1.4.3</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="https://github.com/rajanraj2/trackpad-toggle" class="nav-link" target="_blank" rel="noopener">
+          <svg class="icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          GitHub
+        </a>
+
+        <!-- Theme Switcher (Dark / Light) -->
+        <button id="theme-toggle" class="theme-btn" aria-label="Toggle Theme" title="Toggle Light/Dark Theme">
+          <span class="theme-icon light-icon" aria-hidden="true">☀️</span>
+          <span class="theme-icon dark-icon" aria-hidden="true">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="status-indicator"></span>
+        macOS Sonoma &amp; Sequoia Native • Universal Binary
+      </div>
+
+      <h1 class="hero-title">
+        Clean your Mac.<br>
+        <span class="editorial-accent">Keep your place.</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        The physical kill-switch for your MacBook trackpad. Freeze cursor drift, suppress multi-touch gestures, and wipe down your keyboard without triggering accidental clicks.
+      </p>
+
+      <!-- Terminal Command Tabs with 1-Click Copy -->
+      <div class="command-box">
+        <div class="command-tabs">
+          <button class="cmd-tab active" data-tab="brew">Homebrew</button>
+          <button class="cmd-tab" data-tab="npx">npx</button>
+          <button class="cmd-tab" data-tab="dmg">Direct .dmg</button>
+        </div>
+
+        <div class="command-body">
+          <div class="command-content" id="cmd-content">
+            <span class="cmd-prompt">$</span>
+            <code id="cmd-text">brew install --cask rajanraj2/tap/trackpad-toggle</code>
+          </div>
+          <button id="copy-btn" class="copy-btn" aria-label="Copy command">
+            <span class="copy-label">Copy</span>
+            <svg class="check-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+              <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="command-footer">
+          <span class="shortcut-hint">Default Shortcut: <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd></span>
+          <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest" class="release-link" target="_blank">Latest Release (v1.4.3) →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Hardware Simulation Section -->
+    <section class="stage-section" id="simulation-stage">
+      <div class="stage-header">
+        <div class="stage-tag">Interactive Simulation</div>
+        <h2 class="stage-title">Watch what happens when you wipe.</h2>
+        <p class="stage-subtitle">
+          Toggle the switch below or press <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> on your keyboard to test the hardware lock in real time.
+        </p>
+
+        <!-- Live Simulation Control Switch -->
+        <div class="sim-controls">
+          <button id="sim-toggle-btn" class="sim-toggle-btn state-unlocked">
+            <span class="sim-status-dot"></span>
+            <span id="sim-status-text">State: UNLOCKED (Cursor Drifts)</span>
+            <span class="sim-shortcut-badge">Press ⌃⌥⌘T</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- The Dual Canvas Visualizer Stage -->
+      <div class="simulator-card">
+        <div class="simulator-grid">
+
+          <!-- Left Window: Simulated macOS Screen -->
+          <div class="sim-pane screen-pane">
+            <div class="pane-header">
+              <div class="window-buttons">
+                <span class="dot close"></span>
+                <span class="dot min"></span>
+                <span class="dot max"></span>
+              </div>
+              <span class="pane-title">Simulated macOS Screen</span>
+              <span class="pane-badge" id="screen-badge">Active Input</span>
+            </div>
+            
+            <div class="pane-viewport" id="screen-viewport">
+              <canvas id="screen-canvas" width="600" height="380"></canvas>
+            </div>
+            
+            <div class="pane-footer">
+              <span id="drift-counter" class="metric-text">Drift Delta: <strong id="drift-val">±128 px</strong></span>
+              <span id="clicks-counter" class="metric-text">Misclicks: <strong id="clicks-val">14</strong></span>
+            </div>
+          </div>
+
+          <!-- Right Window: Simulated MacBook Trackpad Topcase -->
+          <div class="sim-pane hardware-pane">
+            <div class="pane-header">
+              <span class="pane-title">Hardware Trackpad &amp; Wiping Cloth</span>
+              <span class="pane-badge" id="hardware-badge">Hardware Live</span>
+            </div>
+
+            <div class="pane-viewport" id="hardware-viewport">
+              <canvas id="hardware-canvas" width="600" height="380"></canvas>
+              <div class="drag-hint">Touch or drag with your mouse to wipe</div>
+            </div>
+
+            <div class="pane-footer">
+              <span class="status-summary" id="hardware-summary">Cloth wiping across trackpad sensor</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Why It Exists: The 4 Pillars -->
+    <section class="pillars-section">
+      <div class="pillars-grid">
+
+        <div class="pillar-card">
+          <div class="pillar-number">01</div>
+          <h3 class="pillar-title">Screen &amp; Keyboard Clean</h3>
+          <p class="pillar-desc">
+            No more locking your screen, shutting down, or carefully dodging the trackpad. Wipe off dust, oil, and crumbs in seconds while staying in your flow.
+          </p>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-number">02</div>
+          <h3 class="pillar-title">True Hardware Lock</h3>
+          <p class="pillar-desc">
+            Unlike apps that just drop clicks, Trackpad Toggle invokes <code>CGAssociateMouseAndMouseCursorPosition(0)</code> to disconnect hardware deltas. The cursor sprite physically cannot move.
+          </p>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-number">03</div>
+          <h3 class="pillar-title">Kernel-Level Hotkey</h3>
+          <p class="pillar-desc">
+            Built with Carbon’s <code>RegisterEventHotKey</code>. It requires zero Accessibility permissions and works at the kernel event layer — you can never lock yourself out.
+          </p>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-number">04</div>
+          <h3 class="pillar-title">Stealth Background Mode</h3>
+          <p class="pillar-desc">
+            Prefer a zero-clutter menu bar? Toggle off the menu-bar icon in Settings. The app runs completely invisible in the background, waking on your shortcut or Spotlight launch.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Interactive Keycap Shortcut Showcase -->
+    <section class="shortcut-showcase">
+      <div class="showcase-content">
+        <h2 class="showcase-title">One shortcut. Instant quiet.</h2>
+        <p class="showcase-desc">Configurable to any combination. Fully customizable in Settings.</p>
+        
+        <div class="keycap-cluster" id="key-cluster">
+          <div class="keycap" data-key="Control">
+            <span class="key-symbol">⌃</span>
+            <span class="key-name">control</span>
+          </div>
+          <div class="keycap" data-key="Alt">
+            <span class="key-symbol">⌥</span>
+            <span class="key-name">option</span>
+          </div>
+          <div class="keycap" data-key="Meta">
+            <span class="key-symbol">⌘</span>
+            <span class="key-name">command</span>
+          </div>
+          <div class="keycap active-trigger" data-key="t">
+            <span class="key-symbol">T</span>
+            <span class="key-name">toggle</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Matrix: Distribution Channels -->
+    <section class="distribution-section">
+      <div class="section-heading">
+        <h2 class="matrix-title">Install your way.</h2>
+        <p class="matrix-subtitle">Unified single source of truth across Homebrew, NPM, and DMG packages.</p>
+      </div>
+
+      <div class="dist-grid">
+        <div class="dist-card">
+          <div class="dist-header">
+            <span class="dist-badge">Package Manager</span>
+            <h3 class="dist-name">Homebrew Cask</h3>
+          </div>
+          <p class="dist-body">Integrated with your macOS terminal workflow and auto-updates.</p>
+          <pre class="dist-code"><code>brew install --cask rajanraj2/tap/trackpad-toggle</code></pre>
+        </div>
+
+        <div class="dist-card">
+          <div class="dist-header">
+            <span class="dist-badge">Node.js Ecosystem</span>
+            <h3 class="dist-name">NPM &amp; npx</h3>
+          </div>
+          <p class="dist-body">Launch or install immediately with zero setup required.</p>
+          <pre class="dist-code"><code>npx trackpad-toggle</code></pre>
+        </div>
+
+        <div class="dist-card">
+          <div class="dist-header">
+            <span class="dist-badge">Standard Mac</span>
+            <h3 class="dist-name">Direct Disk Image (.dmg)</h3>
+          </div>
+          <p class="dist-body">Traditional drag-and-drop installer for macOS Sonoma &amp; Sequoia.</p>
+          <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg" class="dist-btn">
+            Download TrackpadToggle.dmg (4.3 MB)
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <span class="footer-title">Trackpad Toggle</span>
+        <span class="footer-sub">Open-source macOS utility by <a href="https://github.com/rajanraj2" target="_blank" rel="noopener">Rajan Raj</a></span>
+      </div>
+
+      <div class="footer-links">
+        <a href="https://github.com/rajanraj2/trackpad-toggle" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/rajanraj2/homebrew-tap" target="_blank" rel="noopener">Homebrew Tap</a>
+        <a href="https://www.npmjs.com/package/trackpad-toggle" target="_blank" rel="noopener">NPM</a>
+        <a href="https://github.com/rajanraj2/trackpad-toggle/releases" target="_blank" rel="noopener">Releases</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="simulation.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
