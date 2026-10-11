@@ -282,6 +282,14 @@ html[data-theme="light"] .dark-icon { display: inline-block; }
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   opacity: 0.95;
 }
+.apple-icon {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: -2px;
+}
 
 .btn-meta {
   font-family: var(--font-mono);
