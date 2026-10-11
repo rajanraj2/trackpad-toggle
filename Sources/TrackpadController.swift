@@ -331,9 +331,17 @@ private func eventTapCallback(
     event: CGEvent,
     userInfo: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
-
     guard let ptr = userInfo else { return Unmanaged.passRetained(event) }
     let controller = Unmanaged<CGEventTapController>.fromOpaque(ptr).takeUnretainedValue()
+    // PASS THROUGH: If the Settings window is the frontmost window,
+    // we must allow all pointer and keyboard input to reach it.
+    let isSettingsOpen = (NSApp.mainWindow?.windowController is SettingsWindowController) ||
+                      (NSApp.keyWindow?.windowController is SettingsWindowController)
+
+    if isSettingsOpen {
+        return Unmanaged.passRetained(event)
+    }
+    // Duplicate removed.
 
     // The OS disables a passive tap that times out. Re-enable and continue.
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
