@@ -1,6 +1,6 @@
 {
   "name": "trackpad-toggle",
-  "version": "1.3.2",
+  "version": "1.4.1",
   "description": "Native macOS menu-bar utility to disable and re-enable MacBook trackpad via global shortcut",
   "main": "bin/trackpad-toggle.js",
   "bin": {
