@@ -239,7 +239,7 @@ html[data-theme="light"] .dark-icon { display: inline-block; }
 .hero-subtitle {
   font-size: clamp(1rem, 1.8vw, 1.18rem);
   color: var(--text-secondary);
-  max-width: 620px;
+  max-width: 680px;
   line-height: 1.55;
   margin-bottom: 32px;
   font-weight: 400;
