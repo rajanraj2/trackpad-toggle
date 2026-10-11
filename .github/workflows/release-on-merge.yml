@@ -161,6 +161,12 @@ jobs:
           git push origin main
           echo "✅ Successfully updated rajanraj2/homebrew-tap to v${NEW_VERSION}!"
 
+      - name: Setup Node.js for npm Trusted Publishing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
       - name: Publish to NPM Registry
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -173,8 +179,9 @@ jobs:
             echo "Publishing to npm using NPM_TOKEN secret…"
             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
             npm publish --access public
-            echo "✅ Successfully published trackpad-toggle@${NEW_VERSION} to npm!"
+            echo "✅ Successfully published trackpad-toggle@${NEW_VERSION} to npm using token!"
           else
-            echo "Attempting to publish to npm via OIDC Trusted Publishing…"
-            npm publish --provenance --access public || echo "ℹ️ OIDC publish skipped (not yet linked on npmjs.com)."
+            echo "Publishing to npm via OIDC Trusted Publishing (Provenance)…"
+            npm publish --provenance --access public
+            echo "✅ Successfully published trackpad-toggle@${NEW_VERSION} to npm via OIDC!"
           fi
