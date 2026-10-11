@@ -127,11 +127,12 @@ Without both, the app runs but cannot block input. A warning banner appears in t
 
 | Action | How |
 |---|---|
-| Start cleaning mode | Press **⌃⌥⌘T** (default) or click the menu-bar icon. Trackpad and keyboard input are blocked. |
-| End cleaning mode | Press **⌃⌥⌘K** (default keyboard unlock shortcut). |
+| Toggle Trackpad only on/off | Press **⌃⌥⌘T** (default) or click menu bar → **Disable/Enable Trackpad**. Keyboard remains functional. |
+| Toggle Trackpad & Keyboard (Full Lock) | Press **⌃⌥⌘K** (default) or click menu bar → **Lock/Unlock Trackpad & Keyboard**. |
+| Check for Updates | Click menu bar → **Check for Updates…** (shows checking state, then prompt or version). |
 | Toggle Block Cursor & Gestures | Click menu bar → **Block Cursor & Gestures** (checkmark) or in **Settings…** |
-| Change start shortcut | Click menu bar → **Change Shortcut…** or open **Settings…** |
-| Change keyboard unlock shortcut | Open **Settings…** → **Keyboard Unlock Shortcut** |
+| Change Trackpad shortcut | In **Settings…** → press key combo → click **Update** |
+| Change Full Lock shortcut | In **Settings…** → press key combo → click **Update** |
 | Enable/disable startup at login | Click menu bar → **Launch at Login** (checkmark toggle) or in **Settings…** |
 | Hide/show menu bar icon | Toggle **Show icon in menu bar** in **Settings…** |
 | Open Settings | Click menu bar → Settings… or press **⌘,** (or launch from Spotlight if icon is hidden) |
@@ -151,31 +152,27 @@ You can configure the exact level of trackpad suppression to suit your workflow:
 **How to toggle this setting**:
 - **From Menu Bar**: Click the menu-bar icon → toggle **Block Cursor & Gestures** (shows `✓` when enabled).
 - **From Settings**: Open Settings → under **Trackpad Suppression Mode**, toggle **Block Cursor Movement & Gestures**.
-### Setting & Updating Shortcut Key
+### Setting & Updating Shortcut Keys (Staged Selection with Update Button)
 
-You can customize the global toggle shortcut at any time:
+Both shortcuts can be configured separately in **Settings → Keyboard Shortcut Configuration**:
 
-1. Click the menu-bar icon and select **Change Shortcut…** (or open **Settings…**).
-2. Click **Change Shortcut…** to enter recording mode.
-3. Press your desired key combination with modifiers (e.g. `⌃⌥T`, `⌥⌘T`, `⌃⌘T`, or `F6`).
-4. Press **Esc** to cancel without making changes.
-5. Alternatively, click any of the **Quick Presets** (`⌃⌥⌘T`, `⌃⌥T`, `⌥⌘T`, `⌃⌘T`, `F6`) for 1-click switching.
-6. If another app conflicts with your shortcut, the app warns you inline with an error badge.
+1. **Trackpad Shortcut** (Default: `⌃⌥⌘T`): Disables and re-enables only the trackpad.
+2. **Full Lock Shortcut** (Default: `⌃⌥⌘K`): Disables and re-enables both the trackpad and the keyboard.
 
-The start-cleaning shortcut uses **Carbon `RegisterEventHotKey`**, so it works globally regardless of the focused window and requires no Accessibility permission. It only starts cleaning mode; use the dedicated keyboard unlock shortcut to end it.
+**How to change a shortcut:**
+1. Click **Change Shortcut…** next to the shortcut you want to customize.
+2. Press your desired key combination with modifiers (e.g. `⌃⌥T`, `⌥⌘T`, `⌃⌘T`, or `F6`).
+3. The shortcut is staged in the field. **It is NOT saved or registered until you click the explicit "Update" button.**
+4. Click **Update** to confirm and apply your new shortcut, or click **Cancel** (or press **Esc**) to discard.
+5. Alternatively, click any of the **Quick Presets** to stage a preset combination, then click **Update**.
 
-### Keyboard Lock and Safe Unlock
+### Menu Bar Update Checking & 1-Click Upgrade
 
-Starting cleaning mode suppresses keyboard key-down, key-up, modifier, and system-defined key events as well as trackpad input. The only keyboard action that exits cleaning mode is the **Keyboard Unlock Shortcut**, defaulting to **⌃⌥⌘K**.
-
-Configure it before cleaning:
-
-1. Open **Settings…** → **Keyboard Shortcut Configuration**.
-2. Select **Change Unlock Shortcut…**.
-3. Record a key combination with modifiers, or a function key.
-
-The unlock chord is detected and consumed by the active event tap, so it is not delivered to the frontmost app. The regular start-cleaning shortcut does not unlock cleaning mode.
-
+The menu bar dropdown includes a standardized **Check for Updates…** option:
+- **Idle (Default)**: Shows your installed version (e.g. `Trackpad Toggle v1.5.0`).
+- **Checking**: When you click **Check for Updates…**, the status changes to `Trackpad Toggle v1.5.0 — Checking…` with a progress indicator.
+- **Update Available**: The display updates to `v1.5.0 → v1.6.0 (Click to Update)`. Clicking it downloads the verified official release DMG, replaces the app in place, synchronizes Homebrew Caskroom metadata, and relaunches automatically.
+- **Up to Date**: If no newer version exists, the display indicates `Trackpad Toggle v1.5.0 (Latest)`.
 
 ### Automatic Startup at Login
 

@@ -15,10 +15,10 @@ private enum PrefKey {
     static let showMenuBarIcon             = "showMenuBarIcon"
 }
 
-/// Default shortcut to start cleaning mode: Control + Option + Command + T.
-private let defaultKeyCode: UInt32 = 0x11   // 't'
-/// Default keyboard-only recovery shortcut: Control + Option + Command + K.
-private let defaultKeyboardUnlockKeyCode: UInt32 = 0x28   // 'k'
+/// Default shortcut to toggle trackpad only: Control + Option + Command + T.
+private let defaultTrackpadKeyCode: UInt32 = 0x11   // 't'
+/// Default shortcut to toggle trackpad + keyboard (full lock): Control + Option + Command + K.
+private let defaultFullLockKeyCode: UInt32 = 0x28   // 'k'
 /// Carbon modifier flags: cmdKey | optionKey | controlKey.
 private let defaultMods: UInt32 = UInt32(cmdKey | optionKey | controlKey)
 
@@ -28,10 +28,11 @@ final class Preferences {
 
     // MARK: – Shortcuts
 
+    // ── Trackpad Only Toggle Shortcut (Default: ⌃⌥⌘T) ────────────────────────
     var hotKeyCode: UInt32 {
         get {
             guard UserDefaults.standard.object(forKey: PrefKey.hotKeyCode) != nil else {
-                return defaultKeyCode
+                return defaultTrackpadKeyCode
             }
             return UInt32(UserDefaults.standard.integer(forKey: PrefKey.hotKeyCode))
         }
@@ -52,10 +53,13 @@ final class Preferences {
         shortcutDescription(keyCode: hotKeyCode, modifiers: hotKeyModifiers)
     }
 
+    var trackpadShortcutDescription: String { hotKeyDescription }
+
+    // ── Full Lock (Trackpad + Keyboard) Toggle Shortcut (Default: ⌃⌥⌘K) ─────
     var keyboardUnlockKeyCode: UInt32 {
         get {
             guard UserDefaults.standard.object(forKey: PrefKey.keyboardUnlockKeyCode) != nil else {
-                return defaultKeyboardUnlockKeyCode
+                return defaultFullLockKeyCode
             }
             return UInt32(UserDefaults.standard.integer(forKey: PrefKey.keyboardUnlockKeyCode))
         }
@@ -76,6 +80,7 @@ final class Preferences {
         shortcutDescription(keyCode: keyboardUnlockKeyCode, modifiers: keyboardUnlockKeyModifiers)
     }
 
+    var fullLockShortcutDescription: String { keyboardUnlockShortcutDescription }
     // MARK: – Launch at Login
     var launchAtLogin: Bool {
         get { UserDefaults.standard.bool(forKey: PrefKey.launchAtLogin) }
@@ -138,7 +143,7 @@ final class Preferences {
     ]
     // MARK: – Helpers
 
-    private func shortcutDescription(keyCode: UInt32, modifiers: UInt32) -> String {
+    func shortcutDescription(keyCode: UInt32, modifiers: UInt32) -> String {
         carbonModsToString(modifiers) + carbonKeyCodeToString(keyCode)
     }
 

@@ -28,12 +28,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let mbc = MenuBarController(controller: trackpadController)
         menuBarController = mbc
 
-        // 3. Register the start-cleaning shortcut and wire the tap-only unlock shortcut.
-        HotKeyManager.shared.onHotKey = { [weak self] in
-            self?.handleToggleShortcut()
+        // 3. Register both Carbon hotkeys and wire the event-tap full-lock shortcut.
+        HotKeyManager.shared.onTrackpadHotKey = { [weak self] in
+            self?.toggleTrackpadOnly()
         }
-        trackpadController.onKeyboardUnlockShortcut = { [weak self] in
-            self?.handleKeyboardUnlockShortcut()
+        HotKeyManager.shared.onFullLockHotKey = { [weak self] in
+            self?.toggleFullLock()
+        }
+        trackpadController.onFullLockShortcut = { [weak self] in
+            self?.toggleFullLock()
         }
         HotKeyManager.shared.register()
 
@@ -61,7 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings()
         }
 
-        logger.info("Startup complete. Start: \(Preferences.shared.hotKeyDescription); unlock: \(Preferences.shared.keyboardUnlockShortcutDescription)")
+        logger.info("Startup complete. Trackpad shortcut: \(Preferences.shared.hotKeyDescription); Full Lock: \(Preferences.shared.keyboardUnlockShortcutDescription)")
     }
 
     // MARK: – Application Reopen (From Applications, Launchpad, Spotlight)
@@ -84,10 +87,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: – Targeted actions (called from menu items)
 
-    @objc func toggleTrackpad() {
+    @objc func toggleTrackpadOnly() {
         do {
-            try trackpadController.toggle()
-            logger.info("Toggled → \(self.trackpadController.state.displayTitle)")
+            try trackpadController.toggleTrackpadOnly()
+            logger.info("Toggled trackpad-only → \(self.trackpadController.state.displayTitle)")
         } catch TrackpadError.permissionRequired {
             showPermissionAlert()
         } catch TrackpadError.inputMonitoringRequired {
@@ -97,20 +100,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// The ordinary global shortcut can start cleaning mode but cannot unlock it.
-    /// This keeps the dedicated unlock shortcut as the only keyboard escape path.
-    private func handleToggleShortcut() {
-        guard trackpadController.state != .disabled else {
-            logger.info("Ignored toggle shortcut while keyboard lock is active")
-            return
+    @objc func toggleFullLock() {
+        do {
+            try trackpadController.toggleFullLock()
+            logger.info("Toggled full-lock → \(self.trackpadController.state.displayTitle)")
+        } catch TrackpadError.permissionRequired {
+            showPermissionAlert()
+        } catch TrackpadError.inputMonitoringRequired {
+            showInputMonitoringAlert()
+        } catch {
+            showErrorAlert(message: error.localizedDescription)
         }
-        toggleTrackpad()
     }
 
-    private func handleKeyboardUnlockShortcut() {
-        guard trackpadController.state == .disabled else { return }
-        trackpadController.enable()
-        logger.info("Cleaning mode ended through keyboard unlock shortcut")
+    @objc func toggleTrackpad() {
+        toggleTrackpadOnly()
     }
 
     @objc func openSettings() {
@@ -146,31 +150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func checkForUpdatesManual() {
         UpdateManager.shared.checkForUpdates(manual: true)
-        var token: ((UpdateManager.UpdateStatus) -> Void)?
-        token = { [weak self] status in
-            switch status {
-            case .updateAvailable:
-                self?.promptUpdate()
-            case .upToDate(let ver):
-                let alert = NSAlert()
-                alert.messageText = "Trackpad Toggle is Up to Date"
-                alert.informativeText = "You are currently running version \(ver), which is the latest available release."
-                alert.alertStyle = .informational
-                alert.runModal()
-            case .error(let msg):
-                let alert = NSAlert()
-                alert.messageText = "Check for Updates Failed"
-                alert.informativeText = msg
-                alert.alertStyle = .warning
-                alert.runModal()
-            default:
-                break
-            }
-        }
-        UpdateManager.shared.onStatusChange = { status in
-            token?(status)
-            (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
-        }
+        menuBarController?.rebuildMenu()
     }
 
     @objc func promptUpdate() {

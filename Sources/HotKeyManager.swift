@@ -23,9 +23,9 @@ private let logger = Logger(subsystem: "com.powertools.trackpadtoggle", category
 private let kHotKeyEventClass: OSType = OSType(kEventClassKeyboard)
 private let kHotKeyEventKind: UInt32  = UInt32(kEventHotKeyPressed)
 
-/// Unique Carbon hot key ID used to correlate press events back to our registration.
-private let kHotKeyID: UInt32 = 1
-
+/// Unique Carbon hot key IDs.
+private let kTrackpadHotKeyID: UInt32 = 1
+private let kFullLockHotKeyID: UInt32 = 2
 enum HotKeyRegistrationResult: Equatable {
     case success
     case conflict(String)
@@ -52,64 +52,101 @@ final class HotKeyManager {
     static let shared = HotKeyManager()
     private init() {}
 
-    /// Called when the registered hotkey fires.
-    var onHotKey: (() -> Void)?
+    /// Called when the trackpad-only hotkey fires.
+    var onTrackpadHotKey: (() -> Void)?
+    /// Called when the full lock (trackpad + keyboard) hotkey fires.
+    var onFullLockHotKey: (() -> Void)?
+    /// Legacy alias for trackpad-only hotkey.
+    var onHotKey: (() -> Void)? {
+        get { onTrackpadHotKey }
+        set { onTrackpadHotKey = newValue }
+    }
+
     private(set) var lastResult: HotKeyRegistrationResult = .success
 
-    private var hotKeyRef: EventHotKeyRef?
+    private var trackpadHotKeyRef: EventHotKeyRef?
+    private var fullLockHotKeyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
 
-    // MARK: – Registration
-
-    /// Registers the configured shortcut as a Carbon EventHotKey.
-    /// Call again after the user changes their preferred shortcut.
+    /// Registers both configured shortcuts as Carbon EventHotKeys.
+    /// Call again after the user changes either preferred shortcut.
     @discardableResult
     func register() -> HotKeyRegistrationResult {
         unregister()
 
-        let code  = Preferences.shared.hotKeyCode
-        let mods  = Preferences.shared.hotKeyModifiers
-        let keyID = EventHotKeyID(signature: OSType(0x5454474C), // 'TTGL'
-                                  id: kHotKeyID)
-
         // Install the Carbon event handler once (idempotent on subsequent calls).
         installHandlerIfNeeded()
 
-        var hkRef: EventHotKeyRef?
-        let status = RegisterEventHotKey(
-            code,
-            mods,
-            keyID,
+        // 1. Register Trackpad-only shortcut (Default: ⌃⌥⌘T)
+        let code1 = Preferences.shared.hotKeyCode
+        let mods1 = Preferences.shared.hotKeyModifiers
+        let keyID1 = EventHotKeyID(signature: OSType(0x5454474C), // 'TTGL'
+                                   id: kTrackpadHotKeyID)
+
+        var hkRef1: EventHotKeyRef?
+        let status1 = RegisterEventHotKey(
+            code1,
+            mods1,
+            keyID1,
             GetApplicationEventTarget(),
             0,
-            &hkRef
+            &hkRef1
         )
-        if status == noErr {
-            hotKeyRef = hkRef
+        if status1 == noErr {
+            trackpadHotKeyRef = hkRef1
+            logger.info("Trackpad hot key registered: \(Preferences.shared.hotKeyDescription)")
+        } else {
+            logger.warning("RegisterEventHotKey for trackpad failed: OSStatus=\(status1)")
+        }
+
+        // 2. Register Full Lock (Trackpad + Keyboard) shortcut (Default: ⌃⌥⌘K)
+        let code2 = Preferences.shared.keyboardUnlockKeyCode
+        let mods2 = Preferences.shared.keyboardUnlockKeyModifiers
+        let keyID2 = EventHotKeyID(signature: OSType(0x5454474C), // 'TTGL'
+                                   id: kFullLockHotKeyID)
+
+        var hkRef2: EventHotKeyRef?
+        let status2 = RegisterEventHotKey(
+            code2,
+            mods2,
+            keyID2,
+            GetApplicationEventTarget(),
+            0,
+            &hkRef2
+        )
+        if status2 == noErr {
+            fullLockHotKeyRef = hkRef2
+            logger.info("Full lock hot key registered: \(Preferences.shared.keyboardUnlockShortcutDescription)")
+        } else {
+            logger.warning("RegisterEventHotKey for full lock failed: OSStatus=\(status2)")
+        }
+
+        if status1 == noErr && status2 == noErr {
             lastResult = .success
-            logger.info("Hot key registered: code=\(code) mods=\(mods) → \(Preferences.shared.hotKeyDescription)")
             return .success
-        } else if status == -9878 /* eventHotKeyExistsErr */ {
-            let res = HotKeyRegistrationResult.conflict("This shortcut is already reserved by macOS or another application.")
+        } else if status1 == -9878 || status2 == -9878 {
+            let res = HotKeyRegistrationResult.conflict("A shortcut is already reserved by macOS or another application.")
             lastResult = res
-            logger.error("RegisterEventHotKey conflict: OSStatus=\(status)")
             return res
         } else {
-            let res = HotKeyRegistrationResult.failed(status, "System error \(status).")
+            let errCode = status1 != noErr ? status1 : status2
+            let res = HotKeyRegistrationResult.failed(errCode, "System error \(errCode).")
             lastResult = res
-            logger.error("RegisterEventHotKey failed: OSStatus=\(status)")
             return res
         }
     }
 
     func unregister() {
-        if let ref = hotKeyRef {
+        if let ref = trackpadHotKeyRef {
             UnregisterEventHotKey(ref)
-            hotKeyRef = nil
-            logger.info("Hot key unregistered")
+            trackpadHotKeyRef = nil
         }
+        if let ref = fullLockHotKeyRef {
+            UnregisterEventHotKey(ref)
+            fullLockHotKeyRef = nil
+        }
+        logger.info("Hot keys unregistered")
     }
-
     // MARK: – Carbon event handler
 
     private func installHandlerIfNeeded() {
@@ -138,8 +175,10 @@ final class HotKeyManager {
                                   nil,
                                   &hkID)
 
-                if hkID.id == kHotKeyID {
-                    DispatchQueue.main.async { mgr.onHotKey?() }
+                if hkID.id == kTrackpadHotKeyID {
+                    DispatchQueue.main.async { mgr.onTrackpadHotKey?() }
+                } else if hkID.id == kFullLockHotKeyID {
+                    DispatchQueue.main.async { mgr.onFullLockHotKey?() }
                 }
                 return noErr
             },
