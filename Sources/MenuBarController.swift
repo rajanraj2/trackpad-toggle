@@ -164,7 +164,7 @@ final class MenuBarController {
 
         case .disabled(let mode):
             switch mode {
-            case .trackpadOnly:
+            case let locks where locks.trackpadLocked && !locks.keyboardLocked:
                 let enableTrackpadItem = NSMenuItem(
                     title: "Enable Trackpad  (\(trackpadShortcut))",
                     action: #selector(AppDelegate.toggleTrackpadOnly),
@@ -181,7 +181,7 @@ final class MenuBarController {
                 lockAllItem.target = NSApp.delegate
                 menu.addItem(lockAllItem)
 
-            case .fullLock:
+            case let locks where locks.keyboardLocked:
                 let unlockItem = NSMenuItem(
                     title: "Unlock Keyboard & Trackpad  (\(fullLockShortcut))",
                     action: #selector(AppDelegate.toggleFullLock),
@@ -197,6 +197,8 @@ final class MenuBarController {
                 )
                 infoItem.isEnabled = false
                 menu.addItem(infoItem)
+            default:
+                break
             }
 
         default:

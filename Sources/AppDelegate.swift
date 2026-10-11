@@ -64,6 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings()
         }
 
+        // 8. Set activation policy to regular to appear in Force Quit window
+        NSApp.setActivationPolicy(.regular)
+
         logger.info("Startup complete. Trackpad shortcut: \(Preferences.shared.hotKeyDescription); Full Lock: \(Preferences.shared.keyboardUnlockShortcutDescription)")
     }
 
@@ -150,7 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func checkForUpdatesManual() {
         UpdateManager.shared.checkForUpdates(manual: true)
-        menuBarController?.rebuildMenu()
+        // Removed rebuildMenu() call to prevent window collapse/flicker.
     }
 
     @objc func promptUpdate() {
