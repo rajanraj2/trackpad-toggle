@@ -38,6 +38,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         trackpadController.onFullLockShortcut = { [weak self] in
             self?.toggleFullLock()
         }
+        trackpadController.onTrackpadShortcut = { [weak self] in
+            self?.toggleTrackpadOnly()
+        }
         HotKeyManager.shared.register()
 
         // 4. Observe sleep/wake so we can reinstall the tap after wakeup.

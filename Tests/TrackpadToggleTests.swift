@@ -104,8 +104,7 @@ final class MockTrackpadController {
     func toggleFullLock() throws {
         switch state {
         case .enabled: try disable(mode: .fullLock)
-        case .disabled(let m):
-            if m == .fullLock { enable() } else { try disable(mode: .fullLock) }
+        case .disabled: enable()
         default: break
         }
     }
@@ -228,12 +227,18 @@ test("toggleTrackpadOnly() toggles enabled ↔ disabled(trackpadOnly)") {
     try assert(ctrl.state == .enabled)
 }
 
-test("toggleFullLock() toggles enabled ↔ disabled(fullLock)") {
+test("toggleFullLock() toggles enabled ↔ disabled(fullLock) and re-enables all inputs unconditionally") {
     let ctrl = MockTrackpadController()
     try ctrl.toggleFullLock()
     try assert(ctrl.state == .disabled(mode: .fullLock))
     try ctrl.toggleFullLock()
     try assert(ctrl.state == .enabled)
+
+    // Edge case from user: trackpad was disabled first, then full lock, then unlock full lock
+    try ctrl.toggleTrackpadOnly()
+    try assert(ctrl.state == .disabled(mode: .trackpadOnly))
+    try ctrl.toggleFullLock()
+    try assert(ctrl.state == .enabled, "toggleFullLock while disabled must re-enable all inputs unconditionally!")
 }
 
 test("toggle() while transitioning is a no-op") {
