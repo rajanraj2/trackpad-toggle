@@ -115,8 +115,14 @@ final class MockTrackpadController {
     }
 
     var updateSuppressionModeCallCount = 0
+    var suppressionFrozenCursor = false
     func updateSuppressionMode() {
         updateSuppressionModeCallCount += 1
+        guard state != .enabled else {
+            suppressionFrozenCursor = false
+            return
+        }
+        suppressionFrozenCursor = true
     }
 
     enum MockError: Error { case permissionRequired, general }
@@ -353,10 +359,16 @@ test("suppressed event mask contains keyboard and gesture event types") {
     }
 }
 
-test("MockTrackpadController updateSuppressionMode increments count") {
+test("MockTrackpadController updateSuppressionMode increments count and guards state") {
     let ctrl = MockTrackpadController()
     ctrl.updateSuppressionMode()
     try assert(ctrl.updateSuppressionModeCallCount == 1)
+    try assert(!ctrl.suppressionFrozenCursor, "Must NOT freeze cursor when state is enabled!")
+
+    try ctrl.disable()
+    ctrl.updateSuppressionMode()
+    try assert(ctrl.updateSuppressionModeCallCount == 2)
+    try assert(ctrl.suppressionFrozenCursor, "Must freeze cursor when state is disabled!")
 }
 
 test("HotKeyRegistrationResult success isSuccess returns true") {
