@@ -6,42 +6,74 @@ import Carbon
 
 /// Keys stored in UserDefaults.standard.
 private enum PrefKey {
-    static let hotKeyCode              = "hotKeyCode"
-    static let hotKeyMods              = "hotKeyMods"
-    static let launchAtLogin           = "launchAtLogin"
-    static let blockCursorAndGestures  = "blockCursorAndGestures"
-    static let showMenuBarIcon         = "showMenuBarIcon"
+    static let hotKeyCode                  = "hotKeyCode"
+    static let hotKeyMods                  = "hotKeyMods"
+    static let keyboardUnlockKeyCode       = "keyboardUnlockKeyCode"
+    static let keyboardUnlockKeyMods       = "keyboardUnlockKeyMods"
+    static let launchAtLogin               = "launchAtLogin"
+    static let blockCursorAndGestures      = "blockCursorAndGestures"
+    static let showMenuBarIcon             = "showMenuBarIcon"
 }
 
-/// Default shortcut: Control + Option + Command + T  (kVK_ANSI_T = 0x11)
+/// Default shortcut to start cleaning mode: Control + Option + Command + T.
 private let defaultKeyCode: UInt32 = 0x11   // 't'
-/// Carbon modifier flags: cmdKey | optionKey | controlKey
-private let defaultMods: UInt32    = UInt32(cmdKey | optionKey | controlKey)
+/// Default keyboard-only recovery shortcut: Control + Option + Command + K.
+private let defaultKeyboardUnlockKeyCode: UInt32 = 0x28   // 'k'
+/// Carbon modifier flags: cmdKey | optionKey | controlKey.
+private let defaultMods: UInt32 = UInt32(cmdKey | optionKey | controlKey)
 
 final class Preferences {
     static let shared = Preferences()
     private init() {}
 
-    // MARK: – Hotkey
+    // MARK: – Shortcuts
 
     var hotKeyCode: UInt32 {
         get {
-            let v = UserDefaults.standard.integer(forKey: PrefKey.hotKeyCode)
-            return v == 0 ? defaultKeyCode : UInt32(v)
+            guard UserDefaults.standard.object(forKey: PrefKey.hotKeyCode) != nil else {
+                return defaultKeyCode
+            }
+            return UInt32(UserDefaults.standard.integer(forKey: PrefKey.hotKeyCode))
         }
         set { UserDefaults.standard.set(Int(newValue), forKey: PrefKey.hotKeyCode) }
     }
 
     var hotKeyModifiers: UInt32 {
         get {
-            let v = UserDefaults.standard.integer(forKey: PrefKey.hotKeyMods)
-            return v == 0 ? defaultMods : UInt32(v)
+            guard UserDefaults.standard.object(forKey: PrefKey.hotKeyMods) != nil else {
+                return defaultMods
+            }
+            return UInt32(UserDefaults.standard.integer(forKey: PrefKey.hotKeyMods))
         }
         set { UserDefaults.standard.set(Int(newValue), forKey: PrefKey.hotKeyMods) }
     }
 
     var hotKeyDescription: String {
-        carbonModsToString(hotKeyModifiers) + carbonKeyCodeToString(hotKeyCode)
+        shortcutDescription(keyCode: hotKeyCode, modifiers: hotKeyModifiers)
+    }
+
+    var keyboardUnlockKeyCode: UInt32 {
+        get {
+            guard UserDefaults.standard.object(forKey: PrefKey.keyboardUnlockKeyCode) != nil else {
+                return defaultKeyboardUnlockKeyCode
+            }
+            return UInt32(UserDefaults.standard.integer(forKey: PrefKey.keyboardUnlockKeyCode))
+        }
+        set { UserDefaults.standard.set(Int(newValue), forKey: PrefKey.keyboardUnlockKeyCode) }
+    }
+
+    var keyboardUnlockKeyModifiers: UInt32 {
+        get {
+            guard UserDefaults.standard.object(forKey: PrefKey.keyboardUnlockKeyMods) != nil else {
+                return defaultMods
+            }
+            return UInt32(UserDefaults.standard.integer(forKey: PrefKey.keyboardUnlockKeyMods))
+        }
+        set { UserDefaults.standard.set(Int(newValue), forKey: PrefKey.keyboardUnlockKeyMods) }
+    }
+
+    var keyboardUnlockShortcutDescription: String {
+        shortcutDescription(keyCode: keyboardUnlockKeyCode, modifiers: keyboardUnlockKeyModifiers)
     }
 
     // MARK: – Launch at Login
@@ -81,6 +113,8 @@ final class Preferences {
     func resetToDefaults() {
         UserDefaults.standard.removeObject(forKey: PrefKey.hotKeyCode)
         UserDefaults.standard.removeObject(forKey: PrefKey.hotKeyMods)
+        UserDefaults.standard.removeObject(forKey: PrefKey.keyboardUnlockKeyCode)
+        UserDefaults.standard.removeObject(forKey: PrefKey.keyboardUnlockKeyMods)
         UserDefaults.standard.removeObject(forKey: PrefKey.blockCursorAndGestures)
         UserDefaults.standard.removeObject(forKey: PrefKey.showMenuBarIcon)
     }
@@ -103,6 +137,10 @@ final class Preferences {
         ShortcutPreset(title: "Fn Key F6", keyCode: 0x61, modifiers: 0, display: "F6")
     ]
     // MARK: – Helpers
+
+    private func shortcutDescription(keyCode: UInt32, modifiers: UInt32) -> String {
+        carbonModsToString(modifiers) + carbonKeyCodeToString(keyCode)
+    }
 
     private func carbonModsToString(_ mods: UInt32) -> String {
         var s = ""

@@ -3,10 +3,10 @@
 //
 // WHY CARBON?
 // ────────────
-// Carbon RegisterEventHotKey works at the kernel event level and does NOT require
-// the Accessibility or Input Monitoring TCC permissions. This means the recovery
-// shortcut to re-enable the trackpad continues to fire even while our event tap is
-// blocking trackpad input — regardless of whether other permissions have been granted.
+// Carbon RegisterEventHotKey works globally and does NOT require Accessibility
+// or Input Monitoring TCC permissions. It starts cleaning mode from any app.
+// The separate keyboard-unlock shortcut is handled inside the active event tap
+// so its key press is consumed instead of reaching the frontmost application.
 //
 // Alternative (NSEvent.addGlobalMonitorForEvents) requires Accessibility, which would
 // create a circular dependency: if permissions are revoked the shortcut also stops.

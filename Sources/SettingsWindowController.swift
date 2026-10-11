@@ -123,11 +123,11 @@ private struct SettingsView: View {
                             .fontWeight(.medium)
                         Spacer()
 
-                        if vm.isRecording {
+                        if vm.isRecordingToggle {
                             // Active recorder field
                             ShortcutRecorderField(
-                                displayText: vm.recorderDisplayText,
-                                isRecording: vm.isRecording,
+                                displayText: vm.toggleRecorderDisplayText,
+                                isRecording: vm.isRecordingToggle,
                                 onCommit: { code, mods in
                                     vm.commitShortcut(code: code, mods: mods)
                                 },
@@ -158,7 +158,7 @@ private struct SettingsView: View {
                         }
                     }
 
-                    if vm.isRecording {
+                    if vm.isRecordingToggle {
                         HStack(spacing: 4) {
                             Image(systemName: "record.circle.fill")
                                 .foregroundColor(.red)
@@ -167,6 +167,61 @@ private struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                         .padding(.top, 2)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Text("Keyboard Unlock Shortcut:")
+                            .fontWeight(.medium)
+                        Spacer()
+
+                        if vm.isRecordingKeyboardUnlock {
+                            ShortcutRecorderField(
+                                displayText: vm.keyboardUnlockRecorderDisplayText,
+                                isRecording: vm.isRecordingKeyboardUnlock,
+                                onCommit: { code, mods in
+                                    vm.commitKeyboardUnlockShortcut(code: code, mods: mods)
+                                },
+                                onCancel: {
+                                    vm.cancelRecording()
+                                }
+                            )
+                            .frame(width: 180, height: 26)
+
+                            Button("Cancel") {
+                                vm.cancelRecording()
+                            }
+                            .buttonStyle(.bordered)
+                        } else {
+                            Text(vm.keyboardUnlockShortcutDescription)
+                                .font(.system(.body, design: .monospaced))
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.accentColor.opacity(0.12))
+                                .cornerRadius(6)
+
+                            Button("Change Unlock Shortcut…") {
+                                vm.startRecordingKeyboardUnlock()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                    }
+
+                    if vm.isRecordingKeyboardUnlock {
+                        HStack(spacing: 4) {
+                            Image(systemName: "record.circle.fill")
+                                .foregroundColor(.red)
+                            Text("Choose the only keyboard shortcut that exits cleaning mode. Press Esc to cancel.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 2)
+                    } else {
+                        Text("While cleaning mode is active, all keyboard input is blocked. This shortcut is consumed to restore the keyboard and trackpad.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
 
                     // Status feedback message (success / conflict / warning)
@@ -200,32 +255,32 @@ private struct SettingsView: View {
                     }
                     .padding(.top, 4)
 
-                    Text("The shortcut operates system-wide using Carbon RegisterEventHotKey. It works without Accessibility permissions and survives trackpad disable.")
+                    Text("The start shortcut is registered globally with Carbon. During cleaning mode, the event tap blocks every keyboard event except the configurable unlock shortcut above.")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
-            // ── Trackpad Suppression Mode ─────────────────────────────────────
-            Section("Trackpad Suppression Mode") {
+            // ── Input Suppression Mode ─────────────────────────────────────────
+            Section("Input Suppression Mode") {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle("Block Cursor Movement & Gestures", isOn: $vm.blockCursorAndGestures)
                         .toggleStyle(.switch)
 
-                    Text("Controls whether cursor movement and multi-touch gestures (swipes, pinch-to-zoom, rotate) are completely blocked when the trackpad is disabled.")
+                    Text("Keyboard input is always blocked during cleaning mode. This setting controls whether cursor movement and multi-touch gestures are also completely blocked.")
                         .font(.caption)
                         .foregroundColor(.secondary)
 
                     if vm.blockCursorAndGestures {
                         HStack(spacing: 4) {
                             Image(systemName: "lock.fill").foregroundColor(.accentColor)
-                            Text("Full Lockdown: Cursor will NOT move, gestures will NOT work, and clicks/scrolls are blocked.")
+                            Text("Full Lockdown: Keyboard, cursor movement, gestures, clicks, and scrolling are blocked.")
                                 .font(.caption2)
                                 .foregroundColor(.accentColor)
                         }
                     } else {
                         HStack(spacing: 4) {
                             Image(systemName: "lock.open.fill").foregroundColor(.secondary)
-                            Text("Partial Mode: Clicks and scrolls are blocked, but cursor movement is allowed.")
+                            Text("Partial Mode: Keyboard, clicks, and scrolling are blocked, but cursor movement is allowed.")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
@@ -294,7 +349,7 @@ private struct SettingsView: View {
                         }
                         .buttonStyle(.bordered)
                     }
-                    Text("Accessibility allows creating the event tap; Input Monitoring allows dropping events. Both are required for trackpad suppression.")
+                    Text("Accessibility allows creating the event tap; Input Monitoring allows dropping trackpad and keyboard events. Both are required for cleaning mode.")
                         .font(.caption)
                         .foregroundColor(.secondary)
 
@@ -377,13 +432,12 @@ private struct SettingsView: View {
             // ── Safe Recovery ─────────────────────────────────────────────────
             Section("Emergency Recovery") {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("If the trackpad is disabled and you need to restore control:")
+                    Text("If cleaning mode is active and you need to restore control:")
                         .font(.caption)
                         .fontWeight(.semibold)
-                    Text("1. Press the toggle shortcut (\(vm.shortcutDescription)) to immediately re-enable.")
-                    Text("2. Press ⌘Q in this window or press ⌃⌥⌘Q to quit the app.")
-                    Text("3. Open Terminal via Spotlight (⌘Space) and run: killall TrackpadToggle")
-                    Text("4. Restart your Mac — trackpad input is unconditionally restored at reboot.")
+                    Text("1. Press the keyboard unlock shortcut (\(vm.keyboardUnlockShortcutDescription)) to immediately restore the keyboard and trackpad.")
+                    Text("2. If the app is open, click Quit Trackpad Toggle with an external mouse.")
+                    Text("3. Restart your Mac — all input is unconditionally restored at reboot.")
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -398,7 +452,7 @@ private struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(minWidth: 480, minHeight: 520)
+        .frame(minWidth: 480, minHeight: 600)
         .onAppear { vm.refresh() }
     }
 
@@ -513,10 +567,17 @@ final class RecorderTextField: NSTextField {
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
+
+    private enum RecordingTarget {
+        case toggle
+        case keyboardUnlock
+    }
+
     @Published var axGranted = false
     @Published var stateDescription = ""
     @Published var shortcutDescription = Preferences.shared.hotKeyDescription
-    @Published var isRecording = false
+    @Published var keyboardUnlockShortcutDescription = Preferences.shared.keyboardUnlockShortcutDescription
+    @Published private var recordingTarget: RecordingTarget?
     @Published var shortcutMessage: String?
     @Published var shortcutMessageIsError = false
     @Published var diagnosticResult: String?
@@ -548,8 +609,20 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    var recorderDisplayText: String {
-        isRecording ? "Press keys…" : shortcutDescription
+    var isRecordingToggle: Bool {
+        recordingTarget == .toggle
+    }
+
+    var isRecordingKeyboardUnlock: Bool {
+        recordingTarget == .keyboardUnlock
+    }
+
+    var toggleRecorderDisplayText: String {
+        isRecordingToggle ? "Press keys…" : shortcutDescription
+    }
+
+    var keyboardUnlockRecorderDisplayText: String {
+        isRecordingKeyboardUnlock ? "Press keys…" : keyboardUnlockShortcutDescription
     }
     var isTrackpadDisabled: Bool {
         (NSApp.delegate as? AppDelegate)?.trackpadController.state == .disabled
@@ -579,6 +652,7 @@ final class SettingsViewModel: ObservableObject {
 
     func refresh() {
         shortcutDescription = Preferences.shared.hotKeyDescription
+        keyboardUnlockShortcutDescription = Preferences.shared.keyboardUnlockShortcutDescription
         launchAtLogin = LaunchAtLoginManager.shared.isEnabled
         blockCursorAndGestures = Preferences.shared.blockCursorAndGestures
         showMenuBarIcon = Preferences.shared.showMenuBarIcon
@@ -587,12 +661,17 @@ final class SettingsViewModel: ObservableObject {
         }
     }
     func startRecording() {
-        isRecording = true
+        recordingTarget = .toggle
+        shortcutMessage = nil
+    }
+
+    func startRecordingKeyboardUnlock() {
+        recordingTarget = .keyboardUnlock
         shortcutMessage = nil
     }
 
     func cancelRecording() {
-        isRecording = false
+        recordingTarget = nil
         shortcutMessage = nil
     }
 
@@ -600,7 +679,7 @@ final class SettingsViewModel: ObservableObject {
         Preferences.shared.hotKeyCode = code
         Preferences.shared.hotKeyModifiers = mods
         shortcutDescription = Preferences.shared.hotKeyDescription
-        isRecording = false
+        recordingTarget = nil
 
         let result = HotKeyManager.shared.register()
         switch result {
@@ -615,6 +694,16 @@ final class SettingsViewModel: ObservableObject {
             shortcutMessageIsError = true
         }
 
+        (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
+    }
+
+    func commitKeyboardUnlockShortcut(code: UInt32, mods: UInt32) {
+        Preferences.shared.keyboardUnlockKeyCode = code
+        Preferences.shared.keyboardUnlockKeyModifiers = mods
+        keyboardUnlockShortcutDescription = Preferences.shared.keyboardUnlockShortcutDescription
+        recordingTarget = nil
+        shortcutMessage = "✓ Keyboard unlock shortcut updated to \(keyboardUnlockShortcutDescription)"
+        shortcutMessageIsError = false
         (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
     }
 
@@ -634,7 +723,8 @@ final class SettingsViewModel: ObservableObject {
         var lines = [
             "macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)",
             "Accessibility Granted: \(ax ? "YES" : "NO")",
-            "Active Shortcut: \(Preferences.shared.hotKeyDescription)",
+            "Start Cleaning Shortcut: \(Preferences.shared.hotKeyDescription)",
+            "Keyboard Unlock Shortcut: \(Preferences.shared.keyboardUnlockShortcutDescription)",
             "Launch At Login Enabled: \(LaunchAtLoginManager.shared.isEnabled ? "YES" : "NO")",
             "SMAppService Status: \(smStatus)",
             "HotKey Registration: \(HotKeyManager.shared.lastResult.message)",
@@ -650,8 +740,10 @@ final class SettingsViewModel: ObservableObject {
         Preferences.shared.resetToDefaults()
         blockCursorAndGestures = true
         showMenuBarIcon = true
-        isRecording = false
-        shortcutMessage = "✓ Reset to default shortcut (⌃⌥⌘T)"
+        recordingTarget = nil
+        shortcutDescription = Preferences.shared.hotKeyDescription
+        keyboardUnlockShortcutDescription = Preferences.shared.keyboardUnlockShortcutDescription
+        shortcutMessage = "✓ Reset to ⌃⌥⌘T to start and ⌃⌥⌘K to unlock"
         shortcutMessageIsError = false
         HotKeyManager.shared.register()
         (NSApp.delegate as? AppDelegate)?.menuBarController?.rebuildMenu()
