@@ -160,6 +160,10 @@ final class CGEventTapController: TrackpadControlling {
         try disable(mode: LockState(trackpadLocked: true, keyboardLocked: false))
     }
     func updateSuppressionMode() {
+        guard case .disabled = state else {
+            CGAssociateMouseAndMouseCursorPosition(1)
+            return
+        }
         if Preferences.shared.blockCursorAndGestures {
             let currentPos = CGEvent(source: nil)?.location ?? .zero
             self.lockedCursorPosition = currentPos
