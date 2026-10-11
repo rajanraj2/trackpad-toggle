@@ -55,7 +55,7 @@ protocol TrackpadControlling: AnyObject {
     var onFullLockShortcut: (() -> Void)? { get set }
     var onKeyboardUnlockShortcut: (() -> Void)? { get set }
     /// Disable input with the specified lock mode.
-    func disable(mode: LockMode) throws
+    func disable(mode: LockState) throws
     /// Disable trackpad only (default).
     func disable() throws
     /// Re-enable all input by removing the event tap.
@@ -135,13 +135,12 @@ final class CGEventTapController: TrackpadControlling {
         logger.info("Trackpad enabled (event tap removed, cursor re-associated)")
     }
 
-    func disable(mode: LockMode) throws {
+    func disable(mode: LockState) throws {
         state = .transitioning
         do {
             try installTap()
 
             if Preferences.shared.blockCursorAndGestures {
-                // Disconnect mouse movement from on-screen cursor and freeze cursor in place
                 let currentPos = CGEvent(source: nil)?.location ?? .zero
                 self.lockedCursorPosition = currentPos
                 CGAssociateMouseAndMouseCursorPosition(0)
@@ -149,8 +148,8 @@ final class CGEventTapController: TrackpadControlling {
                 logger.info("Cursor frozen at \(String(describing: currentPos))")
             }
 
-            state = .disabled(mode: mode)
-            logger.info("Disabled input with mode: \(String(describing: mode))")
+            state = .disabled(locks: mode)
+            logger.info("Disabled input with locks: \(String(describing: mode))")
         } catch {
             state = .permissionRequired
             throw error
@@ -158,11 +157,9 @@ final class CGEventTapController: TrackpadControlling {
     }
 
     func disable() throws {
-        try disable(mode: .trackpadOnly)
+        try disable(mode: LockState(trackpadLocked: true, keyboardLocked: false))
     }
-
     func updateSuppressionMode() {
-        guard case .disabled = state else { return }
         if Preferences.shared.blockCursorAndGestures {
             let currentPos = CGEvent(source: nil)?.location ?? .zero
             self.lockedCursorPosition = currentPos
@@ -178,40 +175,52 @@ final class CGEventTapController: TrackpadControlling {
     func toggleTrackpadOnly() throws {
         switch state {
         case .enabled:
-            try disable(mode: .trackpadOnly)
-        case .disabled(let mode):
-            if mode == .trackpadOnly {
-                enable()
+            try disable(mode: LockState(trackpadLocked: true, keyboardLocked: false))
+        case .disabled(let locks):
+            if locks.trackpadLocked {
+                // Trackpad was already locked; unlock it while keeping keyboard state
+                var newLocks = locks
+                newLocks.trackpadLocked = false
+                if newLocks.keyboardLocked {
+                    state = .disabled(locks: newLocks)
+                } else {
+                    enable()
+                }
             } else {
-                try disable(mode: .trackpadOnly)
+                // Trackpad was enabled; lock it
+                try disable(mode: LockState(trackpadLocked: true, keyboardLocked: false))
             }
         case .transitioning:
             break
         case .permissionRequired:
             throw TrackpadError.permissionRequired
         case .failed:
-            try disable(mode: .trackpadOnly)
+            try disable(mode: LockState(trackpadLocked: true, keyboardLocked: false))
         case .unsupported:
             throw TrackpadError.unsupported
         }
     }
 
+    // Duplicate removed.
+
     func toggleFullLock() throws {
         switch state {
         case .enabled:
-            try disable(mode: .fullLock)
-        case .disabled(let mode):
-            if mode == .fullLock {
+            try disable(mode: LockState(trackpadLocked: true, keyboardLocked: true))
+        case .disabled(let locks):
+            if locks.keyboardLocked {
+                // Both locked; unlock both
                 enable()
             } else {
-                try disable(mode: .fullLock)
+                // Only trackpad or neither locked; lock both
+                try disable(mode: LockState(trackpadLocked: true, keyboardLocked: true))
             }
         case .transitioning:
             break
         case .permissionRequired:
             throw TrackpadError.permissionRequired
         case .failed:
-            try disable(mode: .fullLock)
+            try disable(mode: LockState(trackpadLocked: true, keyboardLocked: true))
         case .unsupported:
             throw TrackpadError.unsupported
         }
@@ -281,7 +290,7 @@ final class CGEventTapController: TrackpadControlling {
         guard matchesFullLockShortcut(type: type, event: event) else { return }
 
         DispatchQueue.main.async { [weak self] in
-            guard let self, case .disabled(let mode) = self.state, mode == .fullLock else { return }
+            guard let self, case .disabled(let locks) = self.state, locks.keyboardLocked else { return }
             self.onFullLockShortcut?()
         }
     }
@@ -333,14 +342,13 @@ private func eventTapCallback(
     }
 
     if type == .keyDown || type == .keyUp || type == .flagsChanged || type.rawValue == 14 {
-        if case .disabled(let mode) = controller.state, mode == .fullLock {
+        if case .disabled(let locks) = controller.state, locks.keyboardLocked {
             controller.handleKeyboardEvent(type: type, event: event)
             return nil
         } else {
             return Unmanaged.passRetained(event)
         }
     }
-
     // ── Suppression logic based on user configuration ────────────────────────
     //
     // When blockCursorAndGestures is enabled (default):
