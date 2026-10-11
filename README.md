@@ -9,8 +9,8 @@
 <p align="center">
   <a href="https://trackpad-toggle.rajanraj.me"><img src="https://img.shields.io/badge/Website-trackpad--toggle.rajanraj.me-00E5FF?logo=safari&logoColor=black" alt="Official Website"></a>
   <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest"><img src="https://img.shields.io/github/v/release/rajanraj2/trackpad-toggle?color=blue&label=Latest%20Release" alt="Release"></a>
-  <a href="https://www.npmjs.com/package/trackpad-toggle"><img src="https://img.shields.io/badge/npm-trackpad--toggle-cb3837?logo=npm" alt="npm package"></a>
   <a href="https://github.com/rajanraj2/homebrew-tap"><img src="https://img.shields.io/badge/Homebrew-rajanraj2%2Ftap-orange?logo=homebrew" alt="Homebrew Cask"></a>
+  <a href="https://www.npmjs.com/package/trackpad-toggle"><img src="https://img.shields.io/badge/npm-trackpad--toggle-cb3837?logo=npm" alt="npm package"></a>
   <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg"><img src="https://img.shields.io/badge/Download-TrackpadToggle.dmg-success?logo=apple&style=for-the-badge" alt="Download DMG"></a>
 </p>
 ---
@@ -30,28 +30,7 @@
 
 ## Installation Options
 
-### Option 1: Install & Run via NPM / NPX (Zero Setup)
-
-You can launch or install Trackpad Toggle instantly via `npx` or `npm`:
-
-```bash
-# Run or install directly without global installation
-npx trackpad-toggle
-
-# Or install globally on your Mac
-npm install -g trackpad-toggle
-```
-
-**Available CLI Commands**:
-```bash
-npx trackpad-toggle status     # Check installation & running status
-npx trackpad-toggle start      # Launch Trackpad Toggle
-npx trackpad-toggle stop       # Quit Trackpad Toggle
-npx trackpad-toggle update     # Fresh install/update from latest release
-npx trackpad-toggle uninstall  # Cleanly remove app and reset permissions
-```
-
-### Option 2: Install via Homebrew
+### Option 1: Install via Homebrew (Recommended)
 
 Install Trackpad Toggle as a native Homebrew Cask:
 
@@ -74,6 +53,27 @@ brew upgrade --cask trackpad-toggle
 To cleanly uninstall:
 ```bash
 brew uninstall --cask trackpad-toggle
+```
+
+### Option 2: Install & Run via NPM / NPX (Zero Setup)
+
+You can launch or install Trackpad Toggle instantly via `npx` or `npm`:
+
+```bash
+# Run or install directly without global installation
+npx trackpad-toggle
+
+# Or install globally on your Mac
+npm install -g trackpad-toggle
+```
+
+**Available CLI Commands**:
+```bash
+npx trackpad-toggle status     # Check installation & running status
+npx trackpad-toggle start      # Launch Trackpad Toggle
+npx trackpad-toggle stop       # Quit Trackpad Toggle
+npx trackpad-toggle update     # Fresh install/update from latest release
+npx trackpad-toggle uninstall  # Cleanly remove app and reset permissions
 ```
 ### Option 3: macOS Disk Image (.dmg) — No Terminal Required
 
