@@ -3,18 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trackpad Toggle — Clean your Mac. Keep your place.</title>
-  <meta name="description" content="A minimal native macOS menu-bar utility to freeze your trackpad and cursor with a single keyboard shortcut. Clean your keyboard with zero accidental clicks.">
+  <title>Trackpad Toggle — Disable MacBook Trackpad &amp; Keyboard for Cleaning</title>
+  <meta name="description" content="Native macOS utility to disable MacBook built-in trackpad and keyboard with global shortcuts (⌃⌥⌘T and ⌃⌥⌘K). Clean your Mac with zero accidental clicks.">
+  <meta name="keywords" content="disable trackpad mac, disable macbook keyboard, mac keyboard cleaner, macbook touchpad disable, trackpad toggle, clean macbook keyboard, keyboard cleaner mac, disable built-in trackpad macos, macos cleaning mode">
+  <link rel="canonical" href="https://trackpad-toggle.rajanraj.me/">
   
+  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Trackpad Toggle — Clean your Mac. Keep your place.">
-  <meta property="og:description" content="A single shortcut to freeze your cursor and block all touch input on macOS.">
-  <meta property="og:image" content="assets/AppIcon.png">
+  <meta property="og:url" content="https://trackpad-toggle.rajanraj.me/">
+  <meta property="og:title" content="Trackpad Toggle — Disable MacBook Trackpad &amp; Keyboard">
+  <meta property="og:description" content="Freeze your cursor and block touchpad and keyboard input on macOS with a single global shortcut. Clean your MacBook safely.">
+  <meta property="og:image" content="https://trackpad-toggle.rajanraj.me/assets/AppIcon.png">
+  
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://trackpad-toggle.rajanraj.me/">
+  <meta name="twitter:title" content="Trackpad Toggle — Disable MacBook Trackpad &amp; Keyboard">
+  <meta name="twitter:description" content="Freeze your cursor and block touchpad and keyboard input on macOS with a single global shortcut. Clean your MacBook safely.">
+  <meta name="twitter:image" content="https://trackpad-toggle.rajanraj.me/assets/AppIcon.png">
+  
+  <!-- LLM & AI Discovery Standard -->
+  <link rel="alternate" type="text/markdown" title="LLM summary" href="/llms.txt">
+  <link rel="alternate" type="text/markdown" title="LLM full documentation" href="/llms-full.txt">
+  
+  <!-- Structured Data: Schema.org JSON-LD (SoftwareApplication & FAQPage) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "Trackpad Toggle",
+        "operatingSystem": "macOS 14.0 or later",
+        "applicationCategory": "UtilitiesApplication",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "A lightweight native macOS menu-bar utility to freeze your trackpad and keyboard with global shortcuts for safe cleaning and maintenance.",
+        "url": "https://trackpad-toggle.rajanraj.me",
+        "downloadUrl": "https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg",
+        "author": {
+          "@type": "Person",
+          "name": "Rajan Raj",
+          "url": "https://github.com/rajanraj2"
+        },
+        "license": "https://opensource.org/licenses/MIT"
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I disable the built-in trackpad on a MacBook?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Press Control + Option + Command + T (⌃⌥⌘T) using Trackpad Toggle to instantly disable pointer movement, clicks, and touch gestures on the built-in trackpad while leaving the keyboard active."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I clean my MacBook keyboard without pressing keys?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Press Control + Option + Command + K (⌃⌥⌘K) using Trackpad Toggle to lock down both the keyboard and trackpad simultaneously, allowing you to wipe down your keycaps safely without accidental keystrokes."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I install Trackpad Toggle via Homebrew?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Run 'brew install --cask rajanraj2/tap/trackpad-toggle' in Terminal to install Trackpad Toggle as a native macOS Cask."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
   
   <link rel="icon" type="image/svg+xml" href="assets/AppIcon.svg">
   <link rel="apple-touch-icon" href="assets/AppIcon.png">
-
   <!-- Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -232,7 +303,7 @@
         <a href="https://github.com/rajanraj2/homebrew-tap" target="_blank" rel="noopener">Homebrew</a>
         <a href="https://www.npmjs.com/package/trackpad-toggle" target="_blank" rel="noopener">NPM</a>
         <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest" target="_blank" rel="noopener">Releases</a>
-      </div>
+        <a href="/llms.txt" target="_blank" rel="noopener">llms.txt</a>
     </div>
   </footer>
 
