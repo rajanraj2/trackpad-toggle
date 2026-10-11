@@ -699,10 +699,70 @@ html[data-theme="light"] .dark-icon { display: inline-block; }
   }
 }
 
+.footer-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
 .footer-title {
   font-weight: 600;
   font-size: 0.88rem;
-  display: block;
+  display: inline-block;
+}
+
+.visitor-counter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-medium);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  user-select: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.visitor-counter-pill:hover {
+  border-color: var(--accent-cyan);
+  transform: translateY(-1px);
+}
+
+.visitor-counter-pill .pulse-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+.visitor-counter-pill .counter-label {
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.visitor-counter-pill .counter-number {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .footer-sub {

@@ -235,4 +235,115 @@
       }
     });
   });
+
+  // ── 6. Live Unique Visitor Counter & Client Observability ──────────────────
+  const visitorCountEl = document.getElementById('visitor-count');
+
+  async function initVisitorCounter() {
+    if (!visitorCountEl) return;
+
+    // Differentiate human vs bot on client side:
+    // Automation tools typically set navigator.webdriver == true
+    const isAutomated = navigator.webdriver ||
+                        !window.crypto ||
+                        /bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent);
+
+    // Session-based deduplication: count uniquely once per human browser session
+    const hasVisitedThisSession = sessionStorage.getItem('tt_session_recorded');
+
+    try {
+      let countNumber = null;
+
+      if (!hasVisitedThisSession && !isAutomated) {
+        // New unique human visitor in this session -> increment counter
+        const res = await fetch('https://counterapi.com/api/trackpad-toggle.rajanraj.me/view/visitors');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data.value === 'number') {
+            countNumber = data.value;
+            sessionStorage.setItem('tt_session_recorded', '1');
+            localStorage.setItem('tt_cached_visitors', String(countNumber));
+          }
+        }
+      }
+
+      // If already recorded or increment failed, read cached or fallback to hits.sh
+      if (!countNumber) {
+        const cached = localStorage.getItem('tt_cached_visitors');
+        if (cached) {
+          countNumber = parseInt(cached, 10);
+        } else {
+          // Fetch current count via hits.sh svg badge parser
+          const hitsRes = await fetch('https://hits.sh/trackpad-toggle.rajanraj.me.svg', { cache: 'no-cache' });
+          if (hitsRes.ok) {
+            const svgText = await hitsRes.text();
+            const match = svgText.match(/aria-label="hits:\s*([0-9,]+)"/i);
+            if (match && match[1]) {
+              countNumber = parseInt(match[1].replace(/,/g, ''), 10);
+            }
+          }
+        }
+      }
+
+      if (countNumber && !isNaN(countNumber)) {
+        visitorCountEl.textContent = Number(countNumber).toLocaleString();
+      } else {
+        visitorCountEl.textContent = 'Active';
+      }
+    } catch (err) {
+      // Fallback display gracefully without breaking UI
+      const cached = localStorage.getItem('tt_cached_visitors');
+      visitorCountEl.textContent = cached ? Number(cached).toLocaleString() : 'Active';
+    }
+  }
+
+  // ── 7. Client Observability: Performance & Conversion Event Tracking ──────
+  function recordEvent(category, action, label) {
+    // 1. Dispatch to global dataLayer if analytics beacon (e.g. Cloudflare / GA) is present
+    if (window.dataLayer && Array.isArray(window.dataLayer)) {
+      window.dataLayer.push({ event: action, category, label });
+    }
+
+    // 2. Persist conversion event counters in CounterAPI (viewable via JSON API & dashboard)
+    if (action === 'Download_DMG_Click') {
+      fetch('https://counterapi.com/api/trackpad-toggle.rajanraj.me/click/download-dmg').catch(() => {});
+    } else if (action === 'Copy_Command_Click') {
+      const key = label === 'brew' ? 'copy-brew' : 'copy-npx';
+      fetch(`https://counterapi.com/api/trackpad-toggle.rajanraj.me/click/${key}`).catch(() => {});
+    }
+
+    console.debug(`[Telemetry] ${category} -> ${action}: ${label || ''}`);
+  }
+
+  // Track primary download button conversion
+  const downloadBtn = document.querySelector('.primary-download-btn');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      recordEvent('Conversion', 'Download_DMG_Click', 'TrackpadToggle.dmg');
+    });
+  }
+
+  // Track command copy actions
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const activeTab = document.querySelector('.cmd-tab.active');
+      const tabName = activeTab ? activeTab.dataset.tab : 'brew';
+      recordEvent('Engagement', 'Copy_Command_Click', tabName);
+    });
+  }
+  // Track page load performance (Navigation Timing API)
+  window.addEventListener('load', () => {
+    initVisitorCounter();
+
+    if (window.performance && performance.getEntriesByType) {
+      const navEntries = performance.getEntriesByType('navigation');
+      if (navEntries.length > 0) {
+        const nav = navEntries[0];
+        const ttfb = Math.round(nav.responseStart - nav.requestStart);
+        const domReady = Math.round(nav.domContentLoadedEventEnd - nav.startTime);
+        const loadTime = Math.round(nav.loadEventEnd - nav.startTime);
+        recordEvent('Performance', 'PageLoadMetrics', `TTFB: ${ttfb}ms, DOM: ${domReady}ms, Total: ${loadTime}ms`);
+      }
+    }
+  });
 })();
