@@ -64,8 +64,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings()
         }
 
-        // 8. Set activation policy to regular to appear in Force Quit window
-        NSApp.setActivationPolicy(.regular)
+        // 8. Use .accessory activation policy: hides the Dock icon (like a menu-bar
+        //    utility) while still making the app visible in the Force Quit window.
+        //    .regular was previously used here but caused macOS to route cursor events
+        //    through this app's event loop on whichever display the Settings window was
+        //    open, freezing the cursor on that screen even when the trackpad was enabled.
+        NSApp.setActivationPolicy(.accessory)
 
         logger.info("Startup complete. Trackpad shortcut: \(Preferences.shared.hotKeyDescription); Full Lock: \(Preferences.shared.keyboardUnlockShortcutDescription)")
     }
