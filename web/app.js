@@ -149,37 +149,32 @@
     });
   }
 
-  // Periodic auto-demonstration: alternates playing the keypress animations
-  let autoPlayTimer = null;
+  // Continuous loop: alternates between Touchpad (⌃⌥⌘T) and Full Lock (⌃⌥⌘K)
   let nextDemo = 'touchpad';
 
-  function startAutoDemo() {
-    autoPlayTimer = setTimeout(() => {
-      // Only run auto demo if the user is not actively typing or interacting
-      if (document.visibilityState === 'visible') {
-        if (nextDemo === 'touchpad' && clusterTouchpad) {
-          playSequentialPress(clusterTouchpad, toggleTouchpadState);
-          nextDemo = 'full';
-        } else if (clusterFull) {
-          playSequentialPress(clusterFull, toggleFullLockState);
-          nextDemo = 'touchpad';
-        }
+  async function runContinuousAnimationLoop() {
+    // Only animate when tab is visible
+    if (document.visibilityState === 'visible') {
+      if (nextDemo === 'touchpad' && clusterTouchpad) {
+        await playSequentialPress(clusterTouchpad, toggleTouchpadState);
+        nextDemo = 'full';
+      } else if (clusterFull) {
+        await playSequentialPress(clusterFull, toggleFullLockState);
+        nextDemo = 'touchpad';
       }
-      startAutoDemo();
-    }, 6000);
+    }
+    // Brief pause between loops before typing the next shortcut
+    setTimeout(runContinuousAnimationLoop, 1400);
   }
 
-  // User interaction temporarily delays auto demo
-  function resetAutoDemo() {
-    clearTimeout(autoPlayTimer);
-    startAutoDemo();
-  }
+  // Start loop on initial load
+  setTimeout(runContinuousAnimationLoop, 600);
 
-  window.addEventListener('click', resetAutoDemo);
-  window.addEventListener('keydown', resetAutoDemo);
-  startAutoDemo();
-
-  // Live hardware keyboard listener: lights up the respective keycaps
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      setTimeout(runContinuousAnimationLoop, 400);
+    }
+  });
   const allKeycaps = document.querySelectorAll('.keycap');
   window.addEventListener('keydown', (e) => {
     allKeycaps.forEach(cap => {
