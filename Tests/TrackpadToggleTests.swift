@@ -97,6 +97,8 @@ final class MockTrackpadController {
 struct PreferencesT {
     var hotKeyCode: UInt32              = 0x11
     var hotKeyModifiers: UInt32         = 0x0B00 // cmd+opt+ctrl
+    var keyboardUnlockKeyCode: UInt32   = 0x28 // 'K'
+    var keyboardUnlockModifiers: UInt32 = 0x0B00 // cmd+opt+ctrl
     var launchAtLogin: Bool             = false
     var blockCursorAndGestures: Bool    = true
     var showMenuBarIcon: Bool           = true
@@ -104,6 +106,8 @@ struct PreferencesT {
     mutating func resetToDefaults() {
         hotKeyCode              = 0x11
         hotKeyModifiers         = 0x0B00
+        keyboardUnlockKeyCode   = 0x28
+        keyboardUnlockModifiers = 0x0B00
         launchAtLogin           = false
         blockCursorAndGestures  = true
         showMenuBarIcon         = true
@@ -263,6 +267,23 @@ test("hotkey shortcut update persists new modifiers and code") {
     try assert(p.hotKeyModifiers == 0x0900)
 }
 
+test("keyboard unlock shortcut defaults to Control + Option + Command + K") {
+    let p = PreferencesT()
+    try assert(p.keyboardUnlockKeyCode == 0x28)
+    try assert(p.keyboardUnlockModifiers == 0x0B00)
+}
+
+test("keyboard unlock shortcut persists custom key and modifiers") {
+    var p = PreferencesT()
+    p.keyboardUnlockKeyCode = 0x61 // F6
+    p.keyboardUnlockModifiers = 0
+    try assert(p.keyboardUnlockKeyCode == 0x61)
+    try assert(p.keyboardUnlockModifiers == 0)
+    p.resetToDefaults()
+    try assert(p.keyboardUnlockKeyCode == 0x28)
+    try assert(p.keyboardUnlockModifiers == 0x0B00)
+}
+
 test("blockCursorAndGestures defaults to true (Full Lockdown)") {
     let p = PreferencesT()
     try assert(p.blockCursorAndGestures == true)
@@ -276,12 +297,12 @@ test("blockCursorAndGestures can be toggled and reset") {
     try assert(p.blockCursorAndGestures == true)
 }
 
-test("suppressed event mask contains gesture event types") {
-    let gestureRawValues: [UInt32] = [18, 19, 20, 29, 30, 31, 32, 33, 34]
-    let mask = gestureRawValues.reduce(UInt64(0)) { m, val in
+test("suppressed event mask contains keyboard and gesture event types") {
+    let suppressedRawValues: [UInt32] = [10, 11, 12, 14, 18, 19, 20, 29, 30, 31, 32, 33, 34]
+    let mask = suppressedRawValues.reduce(UInt64(0)) { m, val in
         m | (UInt64(1) << UInt64(val))
     }
-    for val in gestureRawValues {
+    for val in suppressedRawValues {
         let bit = UInt64(1) << UInt64(val)
         try assert((mask & bit) != 0, "Missing bit for event rawValue \(val)")
     }
@@ -396,17 +417,16 @@ Run these after launching TrackpadToggle.app. Mark each ✅/❌.
  1. [ ] App appears in menu bar with hand icon.
  2. [ ] Menu shows "Trackpad: Enabled" on first launch.
  3. [ ] Press ⌃⌥⌘T → menu icon changes to "hand.raised.slash" and state = Disabled.
- 4. [ ] While disabled: moving finger on trackpad moves cursor? (should NOT)
- 5. [ ] While disabled: tapping trackpad clicks? (should NOT)
- 6. [ ] While disabled: two-finger scroll? (should NOT)
- 7. [ ] While disabled: typing on keyboard works normally? (MUST work)
- 8. [ ] While disabled: external USB/Bluetooth mouse pointer works? (SHOULD work)
- 9. [ ] Press ⌃⌥⌘T again → trackpad re-enabled.
-10. [ ] Sleep Mac → wake → trackpad still disabled if it was disabled.
-11. [ ] Quit app via menu → trackpad immediately re-enabled.
+ 4. [ ] While cleaning: moving finger on trackpad moves cursor? (should NOT)
+ 5. [ ] While cleaning: tapping trackpad clicks? (should NOT)
+ 6. [ ] While cleaning: two-finger scroll? (should NOT)
+ 7. [ ] While cleaning: ordinary keys and system shortcuts reach the foreground app? (should NOT)
+ 8. [ ] Press ⌃⌥⌘K → keyboard and trackpad re-enable immediately.
+ 9. [ ] Settings → change keyboard unlock shortcut → the new shortcut ends cleaning mode.
+10. [ ] Sleep Mac → wake → cleaning mode stays active if it was active.
+11. [ ] Quit app via external mouse → keyboard and trackpad immediately re-enable.
 12. [ ] Revoke Accessibility in System Settings → relaunch → warning shown.
-13. [ ] Settings window opens → shortcut recorder accepts new combo → takes effect.
-14. [ ] Reset to Defaults restores ⌃⌥⌘T.
+13. [ ] Reset to Defaults restores ⌃⌥⌘T to start and ⌃⌥⌘K to unlock.
 """
 
 print(manualChecklist)

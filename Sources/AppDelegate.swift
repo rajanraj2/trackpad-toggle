@@ -28,9 +28,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let mbc = MenuBarController(controller: trackpadController)
         menuBarController = mbc
 
-        // 3. Register the Carbon hotkey.
+        // 3. Register the start-cleaning shortcut and wire the tap-only unlock shortcut.
         HotKeyManager.shared.onHotKey = { [weak self] in
-            self?.toggleTrackpad()
+            self?.handleToggleShortcut()
+        }
+        trackpadController.onKeyboardUnlockShortcut = { [weak self] in
+            self?.handleKeyboardUnlockShortcut()
         }
         HotKeyManager.shared.register()
 
@@ -58,7 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings()
         }
 
-        logger.info("Startup complete. Shortcut: \(Preferences.shared.hotKeyDescription)")
+        logger.info("Startup complete. Start: \(Preferences.shared.hotKeyDescription); unlock: \(Preferences.shared.keyboardUnlockShortcutDescription)")
     }
 
     // MARK: – Application Reopen (From Applications, Launchpad, Spotlight)
@@ -92,6 +95,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             showErrorAlert(message: error.localizedDescription)
         }
+    }
+
+    /// The ordinary global shortcut can start cleaning mode but cannot unlock it.
+    /// This keeps the dedicated unlock shortcut as the only keyboard escape path.
+    private func handleToggleShortcut() {
+        guard trackpadController.state != .disabled else {
+            logger.info("Ignored toggle shortcut while keyboard lock is active")
+            return
+        }
+        toggleTrackpad()
+    }
+
+    private func handleKeyboardUnlockShortcut() {
+        guard trackpadController.state == .disabled else { return }
+        trackpadController.enable()
+        logger.info("Cleaning mode ended through keyboard unlock shortcut")
     }
 
     @objc func openSettings() {

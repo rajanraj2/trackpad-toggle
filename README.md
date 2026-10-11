@@ -2,7 +2,7 @@
   <img src="Resources/AppIcon.png" width="128" height="128" alt="Trackpad Toggle Logo" style="border-radius: 26px;" />
   <h1 align="center">Trackpad Toggle</h1>
   <p align="center">
-    A lightweight native macOS menu-bar utility that lets you disable and re-enable your MacBook's built-in trackpad using a configurable global keyboard shortcut.
+    A lightweight native macOS menu-bar utility that starts a cleaning lock for your MacBook’s built-in trackpad and keyboard, with configurable start and safe-unlock shortcuts.
   </p>
 </p>
 
@@ -108,14 +108,14 @@ bash build.sh --dmg
 ```
 This outputs **`build/TrackpadToggle.dmg`** (verified, compressed, with `/Applications` symlink).
 
-macOS requires two TCC permissions before the event tap can suppress trackpad input.
+macOS requires two TCC permissions before the event tap can suppress trackpad and keyboard input.
 
 | Permission | Where | Why |
 |---|---|---|
 | **Accessibility** | System Settings → Privacy & Security → Accessibility | Install a system-wide CGEventTap |
 | **Input Monitoring** | System Settings → Privacy & Security → Input Monitoring | Allow the tap to *suppress* (not just observe) events |
 
-Without both, the app runs but cannot block trackpad events. A warning banner appears in the menu.
+Without both, the app runs but cannot block input. A warning banner appears in the menu.
 
 **Steps after first launch:**
 
@@ -127,9 +127,11 @@ Without both, the app runs but cannot block trackpad events. A warning banner ap
 
 | Action | How |
 |---|---|
-| Toggle trackpad on/off | Press **⌃⌥⌘T** (default) or click the menu-bar icon |
+| Start cleaning mode | Press **⌃⌥⌘T** (default) or click the menu-bar icon. Trackpad and keyboard input are blocked. |
+| End cleaning mode | Press **⌃⌥⌘K** (default keyboard unlock shortcut). |
 | Toggle Block Cursor & Gestures | Click menu bar → **Block Cursor & Gestures** (checkmark) or in **Settings…** |
-| Change shortcut key | Click menu bar → **Change Shortcut…** or open **Settings…** |
+| Change start shortcut | Click menu bar → **Change Shortcut…** or open **Settings…** |
+| Change keyboard unlock shortcut | Open **Settings…** → **Keyboard Unlock Shortcut** |
 | Enable/disable startup at login | Click menu bar → **Launch at Login** (checkmark toggle) or in **Settings…** |
 | Hide/show menu bar icon | Toggle **Show icon in menu bar** in **Settings…** |
 | Open Settings | Click menu bar → Settings… or press **⌘,** (or launch from Spotlight if icon is hidden) |
@@ -139,14 +141,13 @@ Without both, the app runs but cannot block trackpad events. A warning banner ap
 You can configure the exact level of trackpad suppression to suit your workflow:
 
 - **Full Lockdown (Default & Recommended)**:
+  - **Keyboard input is completely blocked**, except for the configurable keyboard unlock shortcut.
   - **Cursor movement is completely frozen** (cursor does NOT move).
   - **All multi-touch gestures are blocked** (swipes, pinch-to-zoom, rotate, smart magnify).
   - **Clicks and scrolls are blocked** (physical click, tap-to-click, two-finger scroll).
-  - Input from the trackpad is 100% disabled.
 
 - **Partial Mode**:
-  - Clicks, taps, and scrolling are suppressed, but cursor movement remains active.
-
+  - Keyboard input, clicks, taps, and scrolling are suppressed, but cursor movement remains active.
 **How to toggle this setting**:
 - **From Menu Bar**: Click the menu-bar icon → toggle **Block Cursor & Gestures** (shows `✓` when enabled).
 - **From Settings**: Open Settings → under **Trackpad Suppression Mode**, toggle **Block Cursor Movement & Gestures**.
@@ -161,7 +162,20 @@ You can customize the global toggle shortcut at any time:
 5. Alternatively, click any of the **Quick Presets** (`⌃⌥⌘T`, `⌃⌥T`, `⌥⌘T`, `⌃⌘T`, `F6`) for 1-click switching.
 6. If another app conflicts with your shortcut, the app warns you inline with an error badge.
 
-The shortcut uses **Carbon `RegisterEventHotKey`**, so it works globally regardless of focused window, requires no Accessibility permission, and continues to fire when the trackpad is disabled.
+The start-cleaning shortcut uses **Carbon `RegisterEventHotKey`**, so it works globally regardless of the focused window and requires no Accessibility permission. It only starts cleaning mode; use the dedicated keyboard unlock shortcut to end it.
+
+### Keyboard Lock and Safe Unlock
+
+Starting cleaning mode suppresses keyboard key-down, key-up, modifier, and system-defined key events as well as trackpad input. The only keyboard action that exits cleaning mode is the **Keyboard Unlock Shortcut**, defaulting to **⌃⌥⌘K**.
+
+Configure it before cleaning:
+
+1. Open **Settings…** → **Keyboard Shortcut Configuration**.
+2. Select **Change Unlock Shortcut…**.
+3. Record a key combination with modifiers, or a function key.
+
+The unlock chord is detected and consumed by the active event tap, so it is not delivered to the frontmost app. The regular start-cleaning shortcut does not unlock cleaning mode.
+
 
 ### Automatic Startup at Login
 
@@ -201,7 +215,7 @@ You can completely hide the Trackpad Toggle icon from your menu bar:
 swift Tests/TrackpadToggleTests.swift
 ```
 
-No permissions or hardware required. Tests cover state transitions, permission-failure paths, shortcut updates, presets, startup/login persistence, and update version comparisons. Expected output ends with `PASS` (34/34 tests passing).
+No permissions or hardware required. Tests cover state transitions, permission-failure paths, shortcut updates, presets, startup/login persistence, and update version comparisons. Expected output ends with `PASS`.
 ## Architecture
 
 ```
@@ -209,8 +223,8 @@ Sources/
 ├── main.swift                     — NSApplication bootstrap
 ├── AppDelegate.swift              — coordinator, sleep/wake, permission alerts, menu actions
 ├── TrackpadState.swift            — explicit state enum (enabled/disabled/transitioning/…)
-├── TrackpadController.swift       — protocol + CGEventTapController implementation
-├── HotKeyManager.swift            — Carbon RegisterEventHotKey engine + conflict detection
+├── TrackpadController.swift       — CGEventTap suppression for trackpad and keyboard input
+├── HotKeyManager.swift            — Carbon start-cleaning shortcut registration and conflict detection
 ├── LaunchAtLoginManager.swift     — SMAppService & LaunchAgent startup management
 ├── UpdateManager.swift            — GitHub Releases API update checker & in-place DMG updater
 ├── PermissionsManager.swift       — Accessibility + Input Monitoring TCC checks
@@ -228,18 +242,19 @@ Sources/
 | `IOHIDManager` seize (`kIOHIDOptionsTypeSeizeDevice`) | `kIOReturnNotPrivileged` — requires root. Eliminated. |
 | `MultitouchSupport.framework` `MTDeviceStop` | Per-process stream only; WindowServer unaffected. Eliminated. |
 | `defaults write com.apple.AppleMultitouchTrackpad USBMouseStopsTrackpad 1` | Only works when a USB mouse is present; needs re-login. Not suitable. |
-| **CGEventTap** (`kCGHIDEventTap`, `kCGHeadInsertEventTap`, `kCGEventTapOptionDefault`) | ✅ **Selected.** Intercepts synthesised HID pointer events before delivery to any app. Requires Accessibility + Input Monitoring. |
+| **CGEventTap** (`kCGHIDEventTap`, `kCGHeadInsertEventTap`, `kCGEventTapOptionDefault`) | ✅ **Selected.** Intercepts synthesised HID pointer and keyboard events before delivery to any app. Requires Accessibility + Input Monitoring. |
 
-### What Trackpad Toggle suppresses
+### What Trackpad Toggle suppresses during cleaning mode
 
 | Input | Suppressed? |
 |---|---|
-| Pointer movement & cursor position | ✅ Yes (hardware movement disconnected & locked) |
+| Keyboard keys, modifiers, and media/function events | ✅ Yes, except the configurable keyboard unlock shortcut |
+| Pointer movement & cursor position | ✅ Yes in Full Lockdown |
 | Physical clicks (left, right, other) | ✅ Yes |
 | Tap-to-click | ✅ Yes |
 | Two-finger scrolling & momentum | ✅ Yes |
 | Click-and-drag | ✅ Yes |
-| Multi-touch gestures (swipes, pinch, rotate, zoom) | ✅ Yes |
+| Multi-touch gestures (swipes, pinch, rotate, zoom) | ✅ Yes, where exposed through CGEventTap |
 ### Device discrimination
 
 CGEventTap does not expose a stable per-device hardware identifier in a public API.  
@@ -252,19 +267,15 @@ External USB/Bluetooth mice should continue to function normally for clicks and 
 
 ### Shortcut engine
 
-The global shortcut uses **Carbon `RegisterEventHotKey`**, which operates at kernel level and requires **no TCC permissions**. This is the critical safety design: the recovery shortcut fires even if all TCC permissions are revoked and the trackpad is disabled.
+The start-cleaning shortcut uses **Carbon `RegisterEventHotKey`**, which operates globally and requires **no TCC permissions**. The keyboard unlock shortcut is matched in the active `CGEventTap`, consumed before delivery to other apps, and then removes the tap to restore the trackpad and keyboard.
 
 ## Recovery
 
-If the trackpad is disabled and you cannot interact with the UI:
+If cleaning mode is active and you cannot interact with the UI:
 
-1. **Press the registered shortcut** (default **⌃⌥⌘T**) to toggle it back on.
-2. **Quit the app** — the event tap is removed on exit, re-enabling the trackpad:
-   - Via keyboard shortcut registered in Settings, or
-   - Open Terminal and run: `killall TrackpadToggle`
-3. **Reboot** — the trackpad always returns after a restart.
-
-The app **never** affects the keyboard or external pointing devices independently.
+1. **Press the keyboard unlock shortcut** (default **⌃⌥⌘K**) to restore the keyboard and trackpad.
+2. **Use an external mouse** to quit the app — removing the event tap restores input.
+3. **Reboot** — all input returns after a restart.
 
 ## Manual Verification Checklist
 
@@ -272,13 +283,12 @@ Run these after building and launching the app:
 
 - [ ] Menu bar icon appears (hand icon).
 - [ ] Default state shows "Trackpad: Enabled".
-- [ ] ⌃⌥⌘T disables — cursor stops responding to trackpad.
-- [ ] Tap-to-click does not fire while disabled.
-- [ ] Two-finger scroll does not fire while disabled.
-- [ ] Keyboard input works normally while disabled.
-- [ ] ⌃⌥⌘T re-enables — trackpad works immediately.
-- [ ] Sleep → wake → state preserved correctly.
-- [ ] Quitting the app always re-enables the trackpad.
+- [ ] ⌃⌥⌘T starts cleaning mode — cursor stops responding to the trackpad.
+- [ ] Tap-to-click and two-finger scroll do not fire while cleaning.
+- [ ] Ordinary keyboard keys and system shortcuts do not reach the foreground app.
+- [ ] ⌃⌥⌘K restores keyboard and trackpad input immediately.
+- [ ] Sleep → wake → cleaning mode state preserved correctly.
+- [ ] Quitting the app always re-enables the trackpad and keyboard.
 - [ ] Settings → shortcut recorder → new combo takes effect without relaunch.
 - [ ] Revoking Accessibility → permission warning appears in menu.
 

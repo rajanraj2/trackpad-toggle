@@ -1,5 +1,5 @@
 // TrackpadController.swift
-// Protocol + CGEventTap-based implementation that suppresses built-in trackpad input.
+// Protocol + CGEventTap-based implementation that suppresses built-in trackpad and keyboard input.
 //
 // MECHANISM SELECTION RATIONALE
 // ──────────────────────────────
@@ -23,6 +23,7 @@
 // ✅ Tap-to-click (synthesised as left-click at HID layer)
 // ✅ Momentum scrolling / two-finger scroll
 // ✅ Click+drag
+// ✅ Keyboard key-down, key-up, modifier, and system-defined key events
 // ⚠️ System-level multitouch gestures (Mission Control, Exposé, Launchpad swipes)
 //    These are processed inside WindowServer from raw MultitouchSupport data before
 //    CGEventTap sees them. They are NOT fully suppressed by this mechanism.
@@ -40,6 +41,7 @@
 
 import AppKit
 import ApplicationServices
+import Carbon
 import os.log
 
 private let logger = Logger(subsystem: "com.powertools.trackpadtoggle", category: "TrackpadController")
@@ -49,9 +51,11 @@ private let logger = Logger(subsystem: "com.powertools.trackpadtoggle", category
 protocol TrackpadControlling: AnyObject {
     var state: TrackpadState { get }
     var onStateChange: ((TrackpadState) -> Void)? { get set }
-    /// Disable the trackpad. Throws on permission failure or tap creation error.
+    /// Called when the configured keyboard unlock shortcut is pressed during cleaning mode.
+    var onKeyboardUnlockShortcut: (() -> Void)? { get set }
+    /// Disable the trackpad and keyboard. Throws on permission failure or tap creation error.
     func disable() throws
-    /// Re-enable the trackpad by removing the event tap.
+    /// Re-enable the trackpad and keyboard by removing the event tap.
     func enable()
     /// Toggle between enabled and disabled.
     func toggle() throws
@@ -61,8 +65,8 @@ protocol TrackpadControlling: AnyObject {
 
 // MARK: – CGEventTap Implementation
 
-/// Event types that originate from the trackpad and should be suppressed.
-/// Covers mouse pointer movement, clicks, drag, scroll, and all multi-touch gestures.
+/// Event types suppressed while cleaning mode is active.
+/// Covers trackpad pointer input, gestures, and keyboard actions.
 private func makeSuppressedEventMask() -> CGEventMask {
     let rawValues: [UInt32] = [
         CGEventType.leftMouseDown.rawValue,         // 1
@@ -72,6 +76,10 @@ private func makeSuppressedEventMask() -> CGEventMask {
         CGEventType.mouseMoved.rawValue,            // 5
         CGEventType.leftMouseDragged.rawValue,      // 6
         CGEventType.rightMouseDragged.rawValue,     // 7
+        CGEventType.keyDown.rawValue,               // 10
+        CGEventType.keyUp.rawValue,                 // 11
+        CGEventType.flagsChanged.rawValue,          // 12
+        14,                                         // system-defined (media / function) key event
         CGEventType.scrollWheel.rawValue,           // 22
         CGEventType.tabletPointer.rawValue,         // 23
         CGEventType.tabletProximity.rawValue,       // 24
@@ -99,6 +107,8 @@ final class CGEventTapController: TrackpadControlling {
         didSet { if state != oldValue { onStateChange?(state) } }
     }
     var onStateChange: ((TrackpadState) -> Void)?
+    var onKeyboardUnlockShortcut: (() -> Void)?
+
 
     /// The installed mach port backing the CGEventTap.
     private var tapPort: CFMachPort?
@@ -217,6 +227,36 @@ final class CGEventTapController: TrackpadControlling {
         }
     }
 
+    /// Consumes every keyboard event while cleaning. The configured unlock shortcut
+    /// is detected here rather than registered globally, so it cannot leak to the
+    /// frontmost application and is the sole keyboard path out of cleaning mode.
+    func handleKeyboardEvent(type: CGEventType, event: CGEvent) {
+        guard matchesKeyboardUnlockShortcut(type: type, event: event) else { return }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.state == .disabled else { return }
+            self.onKeyboardUnlockShortcut?()
+        }
+    }
+
+    /// True when the event is exactly the configured unlock chord on key-down.
+    /// Modifiers must match exactly so a superset such as ⇧⌃⌥⌘K does not unlock.
+    func matchesKeyboardUnlockShortcut(type: CGEventType, event: CGEvent) -> Bool {
+        guard type == .keyDown else { return false }
+        let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
+        return keyCode == Preferences.shared.keyboardUnlockKeyCode
+            && carbonModifiers(from: event.flags) == Preferences.shared.keyboardUnlockKeyModifiers
+    }
+
+    private func carbonModifiers(from flags: CGEventFlags) -> UInt32 {
+        var modifiers: UInt32 = 0
+        if flags.contains(.maskControl) { modifiers |= UInt32(controlKey) }
+        if flags.contains(.maskAlternate) { modifiers |= UInt32(optionKey) }
+        if flags.contains(.maskShift) { modifiers |= UInt32(shiftKey) }
+        if flags.contains(.maskCommand) { modifiers |= UInt32(cmdKey) }
+        return modifiers
+    }
+
     deinit {
         removeTap()
         CGAssociateMouseAndMouseCursorPosition(1)
@@ -239,6 +279,11 @@ private func eventTapCallback(
     // The OS disables a passive tap that times out. Re-enable and continue.
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
         controller.tapWasDisabledByOS()
+        return nil
+    }
+
+    if type == .keyDown || type == .keyUp || type == .flagsChanged || type.rawValue == 14 {
+        controller.handleKeyboardEvent(type: type, event: event)
         return nil
     }
 

@@ -98,12 +98,24 @@ final class MenuBarController {
         case .disabled: toggleTitle = "Enable Trackpad"
         default:        toggleTitle = "Toggle Trackpad"
         }
-        let shortcut = Preferences.shared.hotKeyDescription
+        let shortcut = state == .disabled
+            ? Preferences.shared.keyboardUnlockShortcutDescription
+            : Preferences.shared.hotKeyDescription
         let toggleItem = NSMenuItem(title: "\(toggleTitle)  (\(shortcut))",
                                     action: #selector(AppDelegate.toggleTrackpad),
                                     keyEquivalent: "")
         toggleItem.target = NSApp.delegate
         menu.addItem(toggleItem)
+
+        if state == .disabled {
+            let keyboardLockItem = NSMenuItem(
+                title: "Keyboard locked — unlock with \(Preferences.shared.keyboardUnlockShortcutDescription)",
+                action: nil,
+                keyEquivalent: ""
+            )
+            keyboardLockItem.isEnabled = false
+            menu.addItem(keyboardLockItem)
+        }
         menu.addItem(.separator())
 
         // ── Direct Quick Actions: Shortcut & Startup ──────────────────────────
