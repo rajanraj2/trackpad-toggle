@@ -160,3 +160,20 @@ jobs:
           git commit -m "Bump trackpad-toggle to v${NEW_VERSION}" || echo "No changes to commit"
           git push origin main
           echo "✅ Successfully updated rajanraj2/homebrew-tap to v${NEW_VERSION}!"
+
+      - name: Publish to NPM Registry
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NPM_TOKEN:-}" ]; then
+            echo "ℹ️ NPM_TOKEN secret is not set. Skipping npm publish."
+            exit 0
+          fi
+
+          NEW_VERSION="${{ steps.semver.outputs.new_version }}"
+          echo "Publishing trackpad-toggle@${NEW_VERSION} to npm…"
+
+          npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          npm publish --access public
+          echo "✅ Successfully published trackpad-toggle@${NEW_VERSION} to npm registry!"

@@ -8,10 +8,10 @@
 
 <p align="center">
   <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest"><img src="https://img.shields.io/github/v/release/rajanraj2/trackpad-toggle?color=blue&label=Latest%20Release" alt="Release"></a>
+  <a href="https://www.npmjs.com/package/trackpad-toggle"><img src="https://img.shields.io/badge/npm-trackpad--toggle-cb3837?logo=npm" alt="npm package"></a>
   <a href="https://github.com/rajanraj2/homebrew-tap"><img src="https://img.shields.io/badge/Homebrew-rajanraj2%2Ftap-orange?logo=homebrew" alt="Homebrew Cask"></a>
   <a href="https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg"><img src="https://img.shields.io/badge/Download-TrackpadToggle.dmg-success?logo=apple&style=for-the-badge" alt="Download DMG"></a>
 </p>
-
 ---
 
 ## 📥 Quick Download & Install
@@ -29,7 +29,28 @@
 
 ## Installation Options
 
-### Option 1: Install via Homebrew (Fastest for Terminal / Developers)
+### Option 1: Install & Run via NPM / NPX (Zero Setup)
+
+You can launch or install Trackpad Toggle instantly via `npx` or `npm`:
+
+```bash
+# Run or install directly without global installation
+npx trackpad-toggle
+
+# Or install globally on your Mac
+npm install -g trackpad-toggle
+```
+
+**Available CLI Commands**:
+```bash
+npx trackpad-toggle status     # Check installation & running status
+npx trackpad-toggle start      # Launch Trackpad Toggle
+npx trackpad-toggle stop       # Quit Trackpad Toggle
+npx trackpad-toggle update     # Fresh install/update from latest release
+npx trackpad-toggle uninstall  # Cleanly remove app and reset permissions
+```
+
+### Option 2: Install via Homebrew
 
 Install Trackpad Toggle as a native Homebrew Cask:
 
@@ -53,7 +74,7 @@ To cleanly uninstall:
 ```bash
 brew uninstall --cask trackpad-toggle
 ```
-### Option 2: macOS Disk Image (.dmg) — No Terminal Required
+### Option 3: macOS Disk Image (.dmg) — No Terminal Required
 
 The easiest way to install Trackpad Toggle on any Mac without terminal:
 
@@ -65,20 +86,19 @@ The easiest way to install Trackpad Toggle on any Mac without terminal:
 
 > **Gatekeeper Note (First Launch)**: Since this is an open-source, ad-hoc signed app, macOS may display a standard security notice on first open. Simply **right-click (Control-click) `TrackpadToggle.app` → select Open → click Open** (or go to *System Settings → Privacy & Security → Open Anyway*). You only need to do this once.
 
-### Option 3: Finder Double-Click Installer (`Install.command`)
+### Option 4: Finder Double-Click Installer (`Install.command`)
 
 If you cloned this repository locally:
 1. In Finder, double-click **`Install.command`**.
 2. It compiles the app, copies it to `/Applications`, and starts it in your menu bar automatically.
 
-### Option 4: Automatic Startup at Login
+### Option 5: Automatic Startup at Login
 
 Once launched:
 1. Click the menu-bar icon → check **Launch at Login** (or toggle it in Settings).
 2. **Zero clicks needed going forward**: The app automatically starts in the background every time you boot or log in to your Mac.
 
-### Option 5: Build the DMG Locally
-
+### Option 6: Build the DMG Locally
 To generate the `.dmg` installer yourself:
 ```bash
 bash build.sh --dmg
