@@ -54,8 +54,27 @@ final class MenuBarController {
         // ── Single Consolidated Version & Update Line ────────────────────────
         let currentVer = UpdateManager.shared.currentVersion
         let versionItem: NSMenuItem
-        if case .updateAvailable(let newVer, _, _, _) = UpdateManager.shared.status {
-            // Update available: Shows both versions on the same line with "Click to Update" action
+
+        switch UpdateManager.shared.status {
+        case .idle:
+            versionItem = NSMenuItem(
+                title: "Trackpad Toggle v\(currentVer)",
+                action: nil,
+                keyEquivalent: ""
+            )
+            versionItem.isEnabled = false
+            versionItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "Version")
+
+        case .checking:
+            versionItem = NSMenuItem(
+                title: "Trackpad Toggle v\(currentVer) — Checking…",
+                action: nil,
+                keyEquivalent: ""
+            )
+            versionItem.isEnabled = false
+            versionItem.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "Checking for updates")
+
+        case .updateAvailable(let newVer, _, _, _):
             versionItem = NSMenuItem(
                 title: "v\(currentVer) → v\(newVer)  (Click to Update)",
                 action: #selector(AppDelegate.promptUpdate),
@@ -63,17 +82,47 @@ final class MenuBarController {
             )
             versionItem.target = NSApp.delegate
             versionItem.image = NSImage(systemSymbolName: "arrow.up.circle.fill", accessibilityDescription: "Update Available")
-        } else {
-            // Latest version: Clean display of installed version, NO update button or update text
+
+        case .upToDate:
             versionItem = NSMenuItem(
                 title: "Trackpad Toggle v\(currentVer)  (Latest)",
+                action: nil,
+                keyEquivalent: ""
+            )
+            versionItem.isEnabled = false
+            versionItem.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "Up to date")
+
+        case .error(let msg):
+            versionItem = NSMenuItem(
+                title: "Trackpad Toggle v\(currentVer)  (Check Failed)",
+                action: nil,
+                keyEquivalent: ""
+            )
+            versionItem.isEnabled = false
+            versionItem.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: msg)
+        }
+        menu.addItem(versionItem)
+
+        // ── Explicit "Check for Updates…" Menu Item ───────────────────────────
+        let checkUpdateItem: NSMenuItem
+        if UpdateManager.shared.status == .checking {
+            checkUpdateItem = NSMenuItem(
+                title: "Checking for Updates…",
+                action: nil,
+                keyEquivalent: ""
+            )
+            checkUpdateItem.isEnabled = false
+            checkUpdateItem.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "Checking")
+        } else {
+            checkUpdateItem = NSMenuItem(
+                title: "Check for Updates…",
                 action: #selector(AppDelegate.checkForUpdatesManual),
                 keyEquivalent: ""
             )
-            versionItem.target = NSApp.delegate
-            versionItem.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "Up to date")
+            checkUpdateItem.target = NSApp.delegate
+            checkUpdateItem.image = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: "Check for Updates")
         }
-        menu.addItem(versionItem)
+        menu.addItem(checkUpdateItem)
         // Permissions warning banner
         if state == .permissionRequired {
             menu.addItem(.separator())
@@ -91,30 +140,73 @@ final class MenuBarController {
 
         menu.addItem(.separator())
 
-        // ── Toggle action ──────────────────────────────────────────────────────
-        let toggleTitle: String
-        switch state {
-        case .enabled:  toggleTitle = "Disable Trackpad"
-        case .disabled: toggleTitle = "Enable Trackpad"
-        default:        toggleTitle = "Toggle Trackpad"
-        }
-        let shortcut = state == .disabled
-            ? Preferences.shared.keyboardUnlockShortcutDescription
-            : Preferences.shared.hotKeyDescription
-        let toggleItem = NSMenuItem(title: "\(toggleTitle)  (\(shortcut))",
-                                    action: #selector(AppDelegate.toggleTrackpad),
-                                    keyEquivalent: "")
-        toggleItem.target = NSApp.delegate
-        menu.addItem(toggleItem)
+        // ── Toggle Actions: Trackpad Only vs Full Lock ─────────────────────────
+        let trackpadShortcut = Preferences.shared.hotKeyDescription
+        let fullLockShortcut = Preferences.shared.keyboardUnlockShortcutDescription
 
-        if state == .disabled {
-            let keyboardLockItem = NSMenuItem(
-                title: "Keyboard locked — unlock with \(Preferences.shared.keyboardUnlockShortcutDescription)",
-                action: nil,
+        switch state {
+        case .enabled:
+            let toggleTrackpadItem = NSMenuItem(
+                title: "Disable Trackpad  (\(trackpadShortcut))",
+                action: #selector(AppDelegate.toggleTrackpadOnly),
                 keyEquivalent: ""
             )
-            keyboardLockItem.isEnabled = false
-            menu.addItem(keyboardLockItem)
+            toggleTrackpadItem.target = NSApp.delegate
+            menu.addItem(toggleTrackpadItem)
+
+            let toggleFullLockItem = NSMenuItem(
+                title: "Lock Trackpad & Keyboard  (\(fullLockShortcut))",
+                action: #selector(AppDelegate.toggleFullLock),
+                keyEquivalent: ""
+            )
+            toggleFullLockItem.target = NSApp.delegate
+            menu.addItem(toggleFullLockItem)
+
+        case .disabled(let mode):
+            switch mode {
+            case .trackpadOnly:
+                let enableTrackpadItem = NSMenuItem(
+                    title: "Enable Trackpad  (\(trackpadShortcut))",
+                    action: #selector(AppDelegate.toggleTrackpadOnly),
+                    keyEquivalent: ""
+                )
+                enableTrackpadItem.target = NSApp.delegate
+                menu.addItem(enableTrackpadItem)
+
+                let lockAllItem = NSMenuItem(
+                    title: "Lock Keyboard Too  (\(fullLockShortcut))",
+                    action: #selector(AppDelegate.toggleFullLock),
+                    keyEquivalent: ""
+                )
+                lockAllItem.target = NSApp.delegate
+                menu.addItem(lockAllItem)
+
+            case .fullLock:
+                let unlockItem = NSMenuItem(
+                    title: "Unlock Keyboard & Trackpad  (\(fullLockShortcut))",
+                    action: #selector(AppDelegate.toggleFullLock),
+                    keyEquivalent: ""
+                )
+                unlockItem.target = NSApp.delegate
+                menu.addItem(unlockItem)
+
+                let infoItem = NSMenuItem(
+                    title: "Keyboard & Trackpad are locked",
+                    action: nil,
+                    keyEquivalent: ""
+                )
+                infoItem.isEnabled = false
+                menu.addItem(infoItem)
+            }
+
+        default:
+            let defaultToggle = NSMenuItem(
+                title: "Toggle Trackpad  (\(trackpadShortcut))",
+                action: #selector(AppDelegate.toggleTrackpadOnly),
+                keyEquivalent: ""
+            )
+            defaultToggle.target = NSApp.delegate
+            menu.addItem(defaultToggle)
         }
         menu.addItem(.separator())
 

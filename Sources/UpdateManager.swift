@@ -155,53 +155,15 @@ final class UpdateManager {
 
     // MARK: – In-Place Automatic Upgrade (Unified Single Source of Truth)
 
-    /// Upgrades the application to the new version.
-    /// If Homebrew manages the app, executes `brew upgrade --cask trackpad-toggle` to keep
-    /// Homebrew and the filesystem 100% in sync. Otherwise, installs directly from DMG
-    /// and synchronizes Caskroom metadata so there is never a version mismatch.
+    /// Upgrades the application to the new version by downloading and mounting the latest
+    /// official release DMG, cleanly replacing the running application bundle, stripping
+    /// Gatekeeper quarantine attributes, synchronizing Homebrew Caskroom metadata, and relaunching.
     func downloadAndInstallUpdate(
         from downloadURL: URL,
         targetVersion: String? = nil,
         progressHandler: @escaping (String) -> Void,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
-        // 1. If Homebrew manages the installation, try upgrading via Homebrew first
-        if isHomebrewManaged, let brewPath = brewExecutablePath {
-            progressHandler("Upgrading via Homebrew Cask…")
-            logger.info("Executing Homebrew upgrade: \(brewPath) upgrade --cask trackpad-toggle")
-
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                guard let self = self else { return }
-                let brewProc = Process()
-                brewProc.executableURL = URL(fileURLWithPath: brewPath)
-                brewProc.arguments = ["upgrade", "--cask", "trackpad-toggle"]
-                var env = ProcessInfo.processInfo.environment
-                env["HOMEBREW_NO_AUTO_UPDATE"] = "1"
-                brewProc.environment = env
-
-                do {
-                    try brewProc.run()
-                    brewProc.waitUntilExit()
-                    if brewProc.terminationStatus == 0 {
-                        logger.info("Homebrew upgrade succeeded. Relaunching…")
-                        progressHandler("Relaunching Trackpad Toggle…")
-                        self.relaunchAndTerminate(targetApp: "/Applications/TrackpadToggle.app")
-                        completion(.success(()))
-                        return
-                    } else {
-                        logger.warning("Homebrew upgrade exited with status \(brewProc.terminationStatus). Falling back to direct DMG replacement.")
-                    }
-                } catch {
-                    logger.warning("Could not run brew upgrade: \(error.localizedDescription). Falling back to direct DMG replacement.")
-                }
-
-                // Fallback to direct DMG upgrade if brew upgrade failed
-                self.performDirectDMGUpgrade(from: downloadURL, targetVersion: targetVersion, progressHandler: progressHandler, completion: completion)
-            }
-            return
-        }
-
-        // 2. Direct DMG upgrade (for DMG installs or when Homebrew is not managing)
         performDirectDMGUpgrade(from: downloadURL, targetVersion: targetVersion, progressHandler: progressHandler, completion: completion)
     }
 
@@ -254,15 +216,9 @@ final class UpdateManager {
                     throw UpdateError.installFailed("TrackpadToggle.app not found inside disk image")
                 }
 
-                // 3. Determine target app location (/Applications/TrackpadToggle.app or Bundle path)
-                var targetApp = "/Applications/TrackpadToggle.app"
+                // 3. Determine target app location
                 let currentBundle = Bundle.main.bundlePath
-                if currentBundle.hasPrefix("/Applications") {
-                    targetApp = currentBundle
-                } else if currentBundle.contains("/Applications") {
-                    targetApp = currentBundle
-                }
-
+                let targetApp = currentBundle.hasSuffix(".app") ? currentBundle : "/Applications/TrackpadToggle.app"
                 progressHandler("Installing update to \(targetApp)…")
 
                 // Move existing bundle out of the way for atomic replacement

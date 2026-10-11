@@ -51,13 +51,20 @@ private let logger = Logger(subsystem: "com.powertools.trackpadtoggle", category
 protocol TrackpadControlling: AnyObject {
     var state: TrackpadState { get }
     var onStateChange: ((TrackpadState) -> Void)? { get set }
-    /// Called when the configured keyboard unlock shortcut is pressed during cleaning mode.
+    /// Called when the configured full-lock (trackpad + keyboard) shortcut fires.
+    var onFullLockShortcut: (() -> Void)? { get set }
     var onKeyboardUnlockShortcut: (() -> Void)? { get set }
-    /// Disable the trackpad and keyboard. Throws on permission failure or tap creation error.
+    /// Disable input with the specified lock mode.
+    func disable(mode: LockMode) throws
+    /// Disable trackpad only (default).
     func disable() throws
-    /// Re-enable the trackpad and keyboard by removing the event tap.
+    /// Re-enable all input by removing the event tap.
     func enable()
-    /// Toggle between enabled and disabled.
+    /// Toggle trackpad-only mode on/off.
+    func toggleTrackpadOnly() throws
+    /// Toggle full-lock (trackpad + keyboard) mode on/off.
+    func toggleFullLock() throws
+    /// Toggle between enabled and disabled (trackpad only).
     func toggle() throws
     /// Updates cursor association dynamically if mode changes while disabled.
     func updateSuppressionMode()
@@ -107,8 +114,11 @@ final class CGEventTapController: TrackpadControlling {
         didSet { if state != oldValue { onStateChange?(state) } }
     }
     var onStateChange: ((TrackpadState) -> Void)?
-    var onKeyboardUnlockShortcut: (() -> Void)?
-
+    var onFullLockShortcut: (() -> Void)?
+    var onKeyboardUnlockShortcut: (() -> Void)? {
+        get { onFullLockShortcut }
+        set { onFullLockShortcut = newValue }
+    }
 
     /// The installed mach port backing the CGEventTap.
     private var tapPort: CFMachPort?
@@ -125,7 +135,7 @@ final class CGEventTapController: TrackpadControlling {
         logger.info("Trackpad enabled (event tap removed, cursor re-associated)")
     }
 
-    func disable() throws {
+    func disable(mode: LockMode) throws {
         state = .transitioning
         do {
             try installTap()
@@ -139,16 +149,20 @@ final class CGEventTapController: TrackpadControlling {
                 logger.info("Cursor frozen at \(String(describing: currentPos))")
             }
 
-            state = .disabled
-            logger.info("Trackpad disabled (event tap installed)")
+            state = .disabled(mode: mode)
+            logger.info("Disabled input with mode: \(String(describing: mode))")
         } catch {
             state = .permissionRequired
             throw error
         }
     }
 
+    func disable() throws {
+        try disable(mode: .trackpadOnly)
+    }
+
     func updateSuppressionMode() {
-        guard state == .disabled else { return }
+        guard case .disabled = state else { return }
         if Preferences.shared.blockCursorAndGestures {
             let currentPos = CGEvent(source: nil)?.location ?? .zero
             self.lockedCursorPosition = currentPos
@@ -161,15 +175,50 @@ final class CGEventTapController: TrackpadControlling {
         }
     }
 
-    func toggle() throws {
+    func toggleTrackpadOnly() throws {
         switch state {
-        case .enabled:             try disable()
-        case .disabled:            enable()
-        case .transitioning:       break
-        case .permissionRequired:  throw TrackpadError.permissionRequired
-        case .failed:              try disable()
-        case .unsupported:         throw TrackpadError.unsupported
+        case .enabled:
+            try disable(mode: .trackpadOnly)
+        case .disabled(let mode):
+            if mode == .trackpadOnly {
+                enable()
+            } else {
+                try disable(mode: .trackpadOnly)
+            }
+        case .transitioning:
+            break
+        case .permissionRequired:
+            throw TrackpadError.permissionRequired
+        case .failed:
+            try disable(mode: .trackpadOnly)
+        case .unsupported:
+            throw TrackpadError.unsupported
         }
+    }
+
+    func toggleFullLock() throws {
+        switch state {
+        case .enabled:
+            try disable(mode: .fullLock)
+        case .disabled(let mode):
+            if mode == .fullLock {
+                enable()
+            } else {
+                try disable(mode: .fullLock)
+            }
+        case .transitioning:
+            break
+        case .permissionRequired:
+            throw TrackpadError.permissionRequired
+        case .failed:
+            try disable(mode: .fullLock)
+        case .unsupported:
+            throw TrackpadError.unsupported
+        }
+    }
+
+    func toggle() throws {
+        try toggleTrackpadOnly()
     }
 
     // MARK: – Tap lifecycle
@@ -227,25 +276,26 @@ final class CGEventTapController: TrackpadControlling {
         }
     }
 
-    /// Consumes every keyboard event while cleaning. The configured unlock shortcut
-    /// is detected here rather than registered globally, so it cannot leak to the
-    /// frontmost application and is the sole keyboard path out of cleaning mode.
+    /// Consumes keyboard events while in full-lock mode and checks for the full-lock toggle chord.
     func handleKeyboardEvent(type: CGEventType, event: CGEvent) {
-        guard matchesKeyboardUnlockShortcut(type: type, event: event) else { return }
+        guard matchesFullLockShortcut(type: type, event: event) else { return }
 
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.state == .disabled else { return }
-            self.onKeyboardUnlockShortcut?()
+            guard let self, case .disabled(let mode) = self.state, mode == .fullLock else { return }
+            self.onFullLockShortcut?()
         }
     }
 
-    /// True when the event is exactly the configured unlock chord on key-down.
-    /// Modifiers must match exactly so a superset such as ⇧⌃⌥⌘K does not unlock.
-    func matchesKeyboardUnlockShortcut(type: CGEventType, event: CGEvent) -> Bool {
+    /// True when the event is exactly the configured full-lock chord on key-down.
+    func matchesFullLockShortcut(type: CGEventType, event: CGEvent) -> Bool {
         guard type == .keyDown else { return false }
         let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
         return keyCode == Preferences.shared.keyboardUnlockKeyCode
             && carbonModifiers(from: event.flags) == Preferences.shared.keyboardUnlockKeyModifiers
+    }
+
+    func matchesKeyboardUnlockShortcut(type: CGEventType, event: CGEvent) -> Bool {
+        matchesFullLockShortcut(type: type, event: event)
     }
 
     private func carbonModifiers(from flags: CGEventFlags) -> UInt32 {
@@ -283,8 +333,12 @@ private func eventTapCallback(
     }
 
     if type == .keyDown || type == .keyUp || type == .flagsChanged || type.rawValue == 14 {
-        controller.handleKeyboardEvent(type: type, event: event)
-        return nil
+        if case .disabled(let mode) = controller.state, mode == .fullLock {
+            controller.handleKeyboardEvent(type: type, event: event)
+            return nil
+        } else {
+            return Unmanaged.passRetained(event)
+        }
     }
 
     // ── Suppression logic based on user configuration ────────────────────────

@@ -118,31 +118,41 @@ private struct SettingsView: View {
             // ── Shortcut Configuration ────────────────────────────────────────
             Section("Keyboard Shortcut Configuration") {
                 VStack(alignment: .leading, spacing: 8) {
+                    // 1. Trackpad Only Toggle Shortcut (Default: ⌃⌥⌘T)
                     HStack {
-                        Text("Toggle Shortcut:")
-                            .fontWeight(.medium)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Trackpad Shortcut:")
+                                .fontWeight(.medium)
+                            Text("Toggles only the trackpad on and off.")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
                         Spacer()
 
                         if vm.isRecordingToggle {
-                            // Active recorder field
                             ShortcutRecorderField(
-                                displayText: vm.toggleRecorderDisplayText,
+                                displayText: vm.stagedDisplay ?? "Press keys…",
                                 isRecording: vm.isRecordingToggle,
-                                onCommit: { code, mods in
-                                    vm.commitShortcut(code: code, mods: mods)
+                                onKeyRecorded: { code, mods in
+                                    vm.recordKey(code: code, mods: mods)
                                 },
                                 onCancel: {
                                     vm.cancelRecording()
                                 }
                             )
-                            .frame(width: 180, height: 26)
+                            .frame(width: 150, height: 26)
+
+                            Button("Update") {
+                                vm.saveStagedShortcut()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(vm.stagedCode == nil)
 
                             Button("Cancel") {
                                 vm.cancelRecording()
                             }
                             .buttonStyle(.bordered)
                         } else {
-                            // Display badge and Record button
                             Text(vm.shortcutDescription)
                                 .font(.system(.body, design: .monospaced))
                                 .fontWeight(.bold)
@@ -162,7 +172,7 @@ private struct SettingsView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "record.circle.fill")
                                 .foregroundColor(.red)
-                            Text("Listening for key combination… Press any shortcut with modifiers (⌘, ⌥, ⌃, ⇧). Press Esc to cancel.")
+                            Text("Press your key combination, then click Update to save. Esc to cancel.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -171,23 +181,35 @@ private struct SettingsView: View {
 
                     Divider()
 
+                    // 2. Full Lock (Trackpad + Keyboard) Shortcut (Default: ⌃⌥⌘K)
                     HStack {
-                        Text("Keyboard Unlock Shortcut:")
-                            .fontWeight(.medium)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Full Lock Shortcut:")
+                                .fontWeight(.medium)
+                            Text("Toggles both trackpad and keyboard on and off.")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
                         Spacer()
 
                         if vm.isRecordingKeyboardUnlock {
                             ShortcutRecorderField(
-                                displayText: vm.keyboardUnlockRecorderDisplayText,
+                                displayText: vm.stagedDisplay ?? "Press keys…",
                                 isRecording: vm.isRecordingKeyboardUnlock,
-                                onCommit: { code, mods in
-                                    vm.commitKeyboardUnlockShortcut(code: code, mods: mods)
+                                onKeyRecorded: { code, mods in
+                                    vm.recordKey(code: code, mods: mods)
                                 },
                                 onCancel: {
                                     vm.cancelRecording()
                                 }
                             )
-                            .frame(width: 180, height: 26)
+                            .frame(width: 150, height: 26)
+
+                            Button("Update") {
+                                vm.saveStagedShortcut()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(vm.stagedCode == nil)
 
                             Button("Cancel") {
                                 vm.cancelRecording()
@@ -202,7 +224,7 @@ private struct SettingsView: View {
                                 .background(Color.accentColor.opacity(0.12))
                                 .cornerRadius(6)
 
-                            Button("Change Unlock Shortcut…") {
+                            Button("Change Shortcut…") {
                                 vm.startRecordingKeyboardUnlock()
                             }
                             .buttonStyle(.borderedProminent)
@@ -213,15 +235,11 @@ private struct SettingsView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "record.circle.fill")
                                 .foregroundColor(.red)
-                            Text("Choose the only keyboard shortcut that exits cleaning mode. Press Esc to cancel.")
+                            Text("Press your key combination, then click Update to save. Esc to cancel.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         .padding(.top, 2)
-                    } else {
-                        Text("While cleaning mode is active, all keyboard input is blocked. This shortcut is consumed to restore the keyboard and trackpad.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
 
                     // Status feedback message (success / conflict / warning)
@@ -244,7 +262,7 @@ private struct SettingsView: View {
 
                         HStack(spacing: 6) {
                             ForEach(Preferences.presets) { preset in
-                                Button(action: { vm.applyPreset(preset) }) {
+                                Button(action: { vm.stagePreset(preset) }) {
                                     Text("\(preset.display) (\(preset.title))")
                                         .font(.caption)
                                 }
@@ -474,12 +492,12 @@ private struct SettingsView: View {
 private struct ShortcutRecorderField: NSViewRepresentable {
     var displayText: String
     var isRecording: Bool
-    var onCommit: (UInt32, UInt32) -> Void
+    var onKeyRecorded: (UInt32, UInt32) -> Void
     var onCancel: () -> Void
 
     func makeNSView(context: Context) -> RecorderTextField {
         let field = RecorderTextField()
-        field.onCommit = onCommit
+        field.onKeyRecorded = onKeyRecorded
         field.onCancel = onCancel
         return field
     }
@@ -497,7 +515,7 @@ private struct ShortcutRecorderField: NSViewRepresentable {
 
 /// Custom NSTextField that intercepts key events during shortcut recording.
 final class RecorderTextField: NSTextField {
-    var onCommit: ((UInt32, UInt32) -> Void)?
+    var onKeyRecorded: ((UInt32, UInt32) -> Void)?
     var onCancel: (() -> Void)?
 
     var isInRecordingMode = false {
@@ -550,7 +568,7 @@ final class RecorderTextField: NSTextField {
             return
         }
 
-        onCommit?(carbonCode, carbonMods)
+        onKeyRecorded?(carbonCode, carbonMods)
     }
 
     private func cocoaModsToCarbonMods(_ flags: NSEvent.ModifierFlags) -> UInt32 {
@@ -578,6 +596,9 @@ final class SettingsViewModel: ObservableObject {
     @Published var shortcutDescription = Preferences.shared.hotKeyDescription
     @Published var keyboardUnlockShortcutDescription = Preferences.shared.keyboardUnlockShortcutDescription
     @Published private var recordingTarget: RecordingTarget?
+    @Published var stagedCode: UInt32?
+    @Published var stagedMods: UInt32?
+    @Published var stagedDisplay: String?
     @Published var shortcutMessage: String?
     @Published var shortcutMessageIsError = false
     @Published var diagnosticResult: String?
@@ -662,16 +683,53 @@ final class SettingsViewModel: ObservableObject {
     }
     func startRecording() {
         recordingTarget = .toggle
+        stagedCode = nil
+        stagedMods = nil
+        stagedDisplay = nil
         shortcutMessage = nil
     }
 
     func startRecordingKeyboardUnlock() {
         recordingTarget = .keyboardUnlock
+        stagedCode = nil
+        stagedMods = nil
+        stagedDisplay = nil
         shortcutMessage = nil
+    }
+
+    func recordKey(code: UInt32, mods: UInt32) {
+        stagedCode = code
+        stagedMods = mods
+        stagedDisplay = Preferences.shared.shortcutDescription(keyCode: code, modifiers: mods)
+    }
+
+    func stagePreset(_ preset: Preferences.ShortcutPreset) {
+        if recordingTarget == nil {
+            recordingTarget = .toggle
+        }
+        recordKey(code: preset.keyCode, mods: preset.modifiers)
+    }
+
+    func saveStagedShortcut() {
+        guard let code = stagedCode, let mods = stagedMods else { return }
+        switch recordingTarget {
+        case .toggle:
+            commitShortcut(code: code, mods: mods)
+        case .keyboardUnlock:
+            commitKeyboardUnlockShortcut(code: code, mods: mods)
+        case .none:
+            break
+        }
+        stagedCode = nil
+        stagedMods = nil
+        stagedDisplay = nil
     }
 
     func cancelRecording() {
         recordingTarget = nil
+        stagedCode = nil
+        stagedMods = nil
+        stagedDisplay = nil
         shortcutMessage = nil
     }
 

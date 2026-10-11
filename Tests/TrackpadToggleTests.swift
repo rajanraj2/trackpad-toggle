@@ -41,12 +41,26 @@ private struct TestFailure: Error, CustomStringConvertible {
 // the essential types here rather than linking the app binary.)
 // ─────────────────────────────────────────────────────────────────────────────
 
+enum LockModeT: Equatable {
+    case trackpadOnly
+    case fullLock
+}
+
 enum TrackpadStateT: Equatable {
-    case enabled, disabled, transitioning, permissionRequired, failed(String), unsupported
+    case enabled
+    case disabled(mode: LockModeT)
+    case transitioning
+    case permissionRequired
+    case failed(String)
+    case unsupported
+
+    static var disabled: TrackpadStateT { .disabled(mode: .trackpadOnly) }
+
     static func == (l: Self, r: Self) -> Bool {
         switch (l, r) {
-        case (.enabled,.enabled),(.disabled,.disabled),(.transitioning,.transitioning),
+        case (.enabled,.enabled),(.transitioning,.transitioning),
              (.permissionRequired,.permissionRequired),(.unsupported,.unsupported): return true
+        case (.disabled(let a), .disabled(let b)): return a == b
         case (.failed(let a),.failed(let b)): return a == b
         default: return false
         }
@@ -69,20 +83,35 @@ final class MockTrackpadController {
         if state != old { onStateChange?(state) }
     }
 
-    func disable() throws {
+    func disable(mode: LockModeT = .trackpadOnly) throws {
         disableCallCount += 1
         if shouldFailWithPermission { state = .permissionRequired; throw MockError.permissionRequired }
         if shouldFailWithError      { state = .failed("mock error"); throw MockError.general }
         let old = state
-        state = .disabled
+        state = .disabled(mode: mode)
         if state != old { onStateChange?(state) }
     }
-    func toggle() throws {
+
+    func toggleTrackpadOnly() throws {
         switch state {
-        case .enabled:  try disable()
-        case .disabled: enable()
+        case .enabled: try disable(mode: .trackpadOnly)
+        case .disabled(let m):
+            if m == .trackpadOnly { enable() } else { try disable(mode: .trackpadOnly) }
         default: break
         }
+    }
+
+    func toggleFullLock() throws {
+        switch state {
+        case .enabled: try disable(mode: .fullLock)
+        case .disabled(let m):
+            if m == .fullLock { enable() } else { try disable(mode: .fullLock) }
+        default: break
+        }
+    }
+
+    func toggle() throws {
+        try toggleTrackpadOnly()
     }
 
     var updateSuppressionModeCallCount = 0
@@ -182,6 +211,22 @@ test("toggle() from enabled → disabled → enabled") {
     try ctrl.toggle()
     try assert(ctrl.state == .disabled)
     try ctrl.toggle()
+    try assert(ctrl.state == .enabled)
+}
+
+test("toggleTrackpadOnly() toggles enabled ↔ disabled(trackpadOnly)") {
+    let ctrl = MockTrackpadController()
+    try ctrl.toggleTrackpadOnly()
+    try assert(ctrl.state == .disabled(mode: .trackpadOnly))
+    try ctrl.toggleTrackpadOnly()
+    try assert(ctrl.state == .enabled)
+}
+
+test("toggleFullLock() toggles enabled ↔ disabled(fullLock)") {
+    let ctrl = MockTrackpadController()
+    try ctrl.toggleFullLock()
+    try assert(ctrl.state == .disabled(mode: .fullLock))
+    try ctrl.toggleFullLock()
     try assert(ctrl.state == .enabled)
 }
 

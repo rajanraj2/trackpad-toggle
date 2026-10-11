@@ -3,12 +3,18 @@
 
 import Foundation
 
-/// The canonical state of the built-in trackpad as tracked by this application.
+/// Specifies whether only the trackpad is locked or both the trackpad and keyboard are locked.
+enum LockMode: Equatable {
+    case trackpadOnly
+    case fullLock // Trackpad & Keyboard
+}
+
+/// The canonical state of the built-in trackpad and keyboard input as tracked by this application.
 enum TrackpadState: Equatable {
-    /// Trackpad is fully operational (initial/reset state).
+    /// Trackpad and keyboard are fully operational (initial/reset state).
     case enabled
-    /// The event tap is installed and suppressing trackpad events.
-    case disabled
+    /// The event tap is installed with the specified lock mode.
+    case disabled(mode: LockMode)
     /// An async operation is in progress (install/remove tap).
     case transitioning
     /// Accessibility and/or Input Monitoring permission is absent.
@@ -19,6 +25,11 @@ enum TrackpadState: Equatable {
     /// Should not occur on Apple Silicon MacBooks, included for completeness.
     case unsupported
 
+    /// Convenience accessor for trackpad-only disabled mode.
+    static var disabled: TrackpadState {
+        .disabled(mode: .trackpadOnly)
+    }
+
     var isOperational: Bool {
         switch self {
         case .enabled, .disabled: return true
@@ -26,10 +37,24 @@ enum TrackpadState: Equatable {
         }
     }
 
+    var isTrackpadDisabled: Bool {
+        if case .disabled = self { return true }
+        return false
+    }
+
+    var isKeyboardDisabled: Bool {
+        if case .disabled(let mode) = self, mode == .fullLock { return true }
+        return false
+    }
+
     var displayTitle: String {
         switch self {
         case .enabled:            return "Trackpad: Enabled"
-        case .disabled:           return "Trackpad: Disabled"
+        case .disabled(let mode):
+            switch mode {
+            case .trackpadOnly:   return "Trackpad: Disabled"
+            case .fullLock:       return "Trackpad & Keyboard: Locked"
+            }
         case .transitioning:      return "Trackpad: Switching…"
         case .permissionRequired: return "Trackpad: ⚠️ Permission Required"
         case .failed(let msg):    return "Trackpad: Error — \(msg)"
@@ -40,7 +65,11 @@ enum TrackpadState: Equatable {
     var menuBarSymbol: String {
         switch self {
         case .enabled:            return "hand.point.up.left.fill"
-        case .disabled:           return "hand.raised.slash.fill"
+        case .disabled(let mode):
+            switch mode {
+            case .trackpadOnly:   return "hand.raised.slash.fill"
+            case .fullLock:       return "lock.fill"
+            }
         case .transitioning:      return "arrow.triangle.2.circlepath"
         case .permissionRequired: return "exclamationmark.triangle.fill"
         case .failed:             return "xmark.circle.fill"
@@ -51,11 +80,12 @@ enum TrackpadState: Equatable {
     static func == (lhs: TrackpadState, rhs: TrackpadState) -> Bool {
         switch (lhs, rhs) {
         case (.enabled, .enabled),
-             (.disabled, .disabled),
              (.transitioning, .transitioning),
              (.permissionRequired, .permissionRequired),
              (.unsupported, .unsupported):
             return true
+        case (.disabled(let a), .disabled(let b)):
+            return a == b
         case (.failed(let a), .failed(let b)):
             return a == b
         default:
