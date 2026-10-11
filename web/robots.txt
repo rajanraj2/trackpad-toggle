@@ -1,0 +1,39 @@
+# https://www.robotstxt.org/robotstxt.html
+# Allow all web search engines and AI / LLM answer engine crawlers
+
+User-agent: *
+Allow: /
+
+# Specifically allow major AI search and retrieval agents
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# Canonical Sitemaps & LLM context
+Sitemap: https://trackpad-toggle.rajanraj.me/sitemap.xml

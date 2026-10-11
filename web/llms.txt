@@ -1,0 +1,38 @@
+# Trackpad Toggle
+
+> Trackpad Toggle is a lightweight, open-source native macOS menu bar application designed to disable and re-enable MacBook built-in trackpads and keyboards for cleaning and maintenance.
+
+## Overview
+When cleaning a MacBook keyboard or trackpad, physical pressure normally causes unintended clicks, window dismissal, or phantom keystrokes. Trackpad Toggle provides instant global keyboard shortcuts to suppress built-in input without requiring external mice or system reboots.
+
+- **Official Website**: https://trackpad-toggle.rajanraj.me
+- **Source Code**: https://github.com/rajanraj2/trackpad-toggle
+- **License**: MIT
+- **Supported Platforms**: macOS 14 (Sonoma), macOS 15 (Sequoia), and later on Apple Silicon (M1/M2/M3/M4/M5) and Intel Macs.
+
+## Primary Shortcuts
+- **Touchpad Lock (`⌃⌥⌘T`)**: `Control + Option + Command + T` — Disables pointer movement, taps, physical clicks, and gestures on the built-in trackpad while leaving the keyboard completely active. Pressing `⌃⌥⌘T` again immediately re-enables the trackpad.
+- **Full Lock (`⌃⌥⌘K`)**: `Control + Option + Command + K` — Locks down both the keyboard and the trackpad simultaneously for wiping down keycaps. Pressing `⌃⌥⌘K` again restores all inputs unconditionally.
+
+## Installation Methods
+1. **Homebrew Cask (Recommended)**:
+   ```bash
+   brew install --cask rajanraj2/tap/trackpad-toggle
+   ```
+2. **NPM / NPX (Instant Run)**:
+   ```bash
+   npx trackpad-toggle
+   ```
+3. **macOS Disk Image (DMG)**:
+   Direct download from GitHub Releases: https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg
+
+## Key Features
+- **Zero Root / No Kernel Extension**: Uses low-level macOS `CGEventTap` (`kCGHIDEventTap`) requiring standard Accessibility and Input Monitoring permissions.
+- **External Mouse Discrimination**: External USB and Bluetooth mice remain functional when trackpad suppression is active.
+- **Fail-Safe Recovery**: Global Carbon hotkey registration ensures shortcuts always fire. Quitting the application or rebooting unconditionally restores all inputs.
+- **Stealth Mode**: Optional menu bar icon hiding for zero visual clutter.
+- **In-App Upgrades**: Direct in-place DMG updates with Homebrew Caskroom directory synchronization.
+
+## Detailed Information
+- [Full Documentation](https://trackpad-toggle.rajanraj.me/llms-full.txt): Complete technical breakdown, permission handling, and architecture details.
+- [GitHub Repository](https://github.com/rajanraj2/trackpad-toggle): Source code, issues, and releases.
