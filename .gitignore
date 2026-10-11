@@ -9,3 +9,6 @@ build/
 *.swp
 *.o
 *~
+
+# Local documentation only (do not track on remote)
+docs/
