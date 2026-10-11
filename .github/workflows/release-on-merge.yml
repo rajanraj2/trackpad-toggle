@@ -18,7 +18,7 @@ on:
 
 permissions:
   contents: write
-
+  id-token: write
 jobs:
   release:
     name: Automatic Release & Tap Bump
@@ -165,15 +165,16 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -z "${NPM_TOKEN:-}" ]; then
-            echo "ℹ️ NPM_TOKEN secret is not set. Skipping npm publish."
-            exit 0
-          fi
-
           NEW_VERSION="${{ steps.semver.outputs.new_version }}"
-          echo "Publishing trackpad-toggle@${NEW_VERSION} to npm…"
-
+          echo "Preparing trackpad-toggle@${NEW_VERSION} for npm publish…"
           npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          npm publish --access public
-          echo "✅ Successfully published trackpad-toggle@${NEW_VERSION} to npm registry!"
+
+          if [ -n "${NPM_TOKEN:-}" ]; then
+            echo "Publishing to npm using NPM_TOKEN secret…"
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+            npm publish --access public
+            echo "✅ Successfully published trackpad-toggle@${NEW_VERSION} to npm!"
+          else
+            echo "Attempting to publish to npm via OIDC Trusted Publishing…"
+            npm publish --provenance --access public || echo "ℹ️ OIDC publish skipped (not yet linked on npmjs.com)."
+          fi
