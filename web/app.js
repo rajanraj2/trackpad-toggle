@@ -5,16 +5,14 @@
  */
 
 (function () {
-  // ── 1. Theme Switcher (Dark / Light) with LocalStorage persistence ──────────
+  // ── 1. Theme Switcher (Light / Dark) with LocalStorage persistence ─────────
   const themeToggle = document.getElementById('theme-toggle');
   const htmlRoot = document.documentElement;
 
-  // Retrieve saved theme or default to system preference
+  // Light is the site default. An explicit choice remains persisted.
   const savedTheme = localStorage.getItem('trackpad-theme');
   if (savedTheme) {
     htmlRoot.setAttribute('data-theme', savedTheme);
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-    htmlRoot.setAttribute('data-theme', 'light');
   }
 
   if (themeToggle) {

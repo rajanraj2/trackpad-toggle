@@ -11,7 +11,7 @@
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Dark Theme (Default) ────────────────────────────────────────────────── */
+/* ── Dark Theme ──────────────────────────────────────────────────────────── */
 html[data-theme="dark"] {
   --bg-primary: #090B0E;
   --bg-secondary: #0F1318;
