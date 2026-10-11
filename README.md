@@ -230,17 +230,16 @@ Sources/
 | `defaults write com.apple.AppleMultitouchTrackpad USBMouseStopsTrackpad 1` | Only works when a USB mouse is present; needs re-login. Not suitable. |
 | **CGEventTap** (`kCGHIDEventTap`, `kCGHeadInsertEventTap`, `kCGEventTapOptionDefault`) | ✅ **Selected.** Intercepts synthesised HID pointer events before delivery to any app. Requires Accessibility + Input Monitoring. |
 
-### What CGEventTap suppresses
+### What Trackpad Toggle suppresses
 
 | Input | Suppressed? |
 |---|---|
-| Pointer movement | ✅ Yes |
-| Physical click (left/right) | ✅ Yes |
-| Tap-to-click | ✅ Yes (synthesised as a left-click at HID layer) |
-| Two-finger scroll | ✅ Yes |
+| Pointer movement & cursor position | ✅ Yes (hardware movement disconnected & locked) |
+| Physical clicks (left, right, other) | ✅ Yes |
+| Tap-to-click | ✅ Yes |
+| Two-finger scrolling & momentum | ✅ Yes |
 | Click-and-drag | ✅ Yes |
-| System multitouch gestures (Mission Control, Launchpad swipe, Exposé) | ⚠️ **No** — these are processed inside WindowServer from raw MultitouchSupport data *before* CGEventTap sees them |
-
+| Multi-touch gestures (swipes, pinch, rotate, zoom) | ✅ Yes |
 ### Device discrimination
 
 CGEventTap does not expose a stable per-device hardware identifier in a public API.  
@@ -299,12 +298,11 @@ Releases are fully automated via GitHub Actions using Pull Request labels:
 2. Once CI passes, click **Merge pull request**.
 3. GitHub Actions automatically calculates the next version, pushes the tag (`vX.Y.Z`), creates the GitHub Release with `TrackpadToggle.dmg`, and updates `Casks/trackpad-toggle.rb` in [rajanraj2/homebrew-tap](https://github.com/rajanraj2/homebrew-tap).
 
-## Limitations
+## Technical Considerations
 
-1. **System gestures not blocked** — Mission Control, Exposé, Launchpad swipes bypass CGEventTap.
-2. **No sandbox** — `CGEventTap` in suppression mode is incompatible with the App Sandbox entitlement. The app must run unsandboxed (standard for local developer tools).
-3. **No notarisation** — the build script uses an ad-hoc signature. Gatekeeper will warn on first open; right-click → Open to bypass.
-4. **External mouse discrimination is heuristic** — tested on Apple-standard hardware; exotic mice may behave differently.
+1. **No sandbox** — `CGEventTap` in active suppression mode is incompatible with the App Sandbox entitlement. The app runs unsandboxed.
+2. **Ad-hoc codesign** — builds use a stable designated requirement. Gatekeeper may ask for approval on first open; right-click → Open to bypass.
+3. **External mouse discrimination** — tested on standard Apple and USB pointing devices.
 
 ## Troubleshooting
 

@@ -33,8 +33,7 @@
 
   const commands = {
     brew: 'brew install --cask rajanraj2/tap/trackpad-toggle',
-    npx: 'npx trackpad-toggle',
-    dmg: 'curl -fsSL -O https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg'
+    npx: 'npx trackpad-toggle'
   };
 
   tabs.forEach(tab => {
@@ -99,18 +98,11 @@
       });
     });
 
-    // Clicking keycaps manually in browser triggers tactile feedback and toggles demo
+    // Clicking keycaps manually in browser triggers tactile feedback
     keycaps.forEach(cap => {
       cap.addEventListener('click', () => {
         cap.classList.add('active');
         setTimeout(() => cap.classList.remove('active'), 180);
-        
-        // Trigger simulation toggle if clicking T
-        if (cap.getAttribute('data-key') === 't' && window.setSimulationLocked) {
-          const btn = document.getElementById('sim-toggle-btn');
-          const isCurrentlyLocked = btn && btn.classList.contains('state-locked');
-          window.setSimulationLocked(!isCurrentlyLocked);
-        }
       });
     });
   }
