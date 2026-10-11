@@ -18,7 +18,7 @@ on:
 
 permissions:
   contents: write
-
+  id-token: write
 jobs:
   release:
     name: Automatic Release & Tap Bump
@@ -160,3 +160,21 @@ jobs:
           git commit -m "Bump trackpad-toggle to v${NEW_VERSION}" || echo "No changes to commit"
           git push origin main
           echo "✅ Successfully updated rajanraj2/homebrew-tap to v${NEW_VERSION}!"
+
+      - name: Publish to NPM Registry
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          NEW_VERSION="${{ steps.semver.outputs.new_version }}"
+          echo "Preparing trackpad-toggle@${NEW_VERSION} for npm publish…"
+          npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
+
+          if [ -n "${NPM_TOKEN:-}" ]; then
+            echo "Publishing to npm using NPM_TOKEN secret…"
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+            npm publish --access public
+            echo "✅ Successfully published trackpad-toggle@${NEW_VERSION} to npm!"
+          else
+            echo "Attempting to publish to npm via OIDC Trusted Publishing…"
+            npm publish --provenance --access public || echo "ℹ️ OIDC publish skipped (not yet linked on npmjs.com)."
+          fi

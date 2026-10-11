@@ -1,0 +1,48 @@
+{
+  "name": "trackpad-toggle",
+  "version": "1.3.2",
+  "description": "Native macOS menu-bar utility to disable and re-enable MacBook trackpad via global shortcut",
+  "main": "bin/trackpad-toggle.js",
+  "bin": {
+    "trackpad-toggle": "bin/trackpad-toggle.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node bin/trackpad-toggle.js",
+    "status": "node bin/trackpad-toggle.js status",
+    "test": "node bin/trackpad-toggle.js --help"
+  },
+  "keywords": [
+    "macos",
+    "trackpad",
+    "touchpad",
+    "macbook",
+    "toggle",
+    "utility",
+    "menu-bar",
+    "keyboard-shortcut",
+    "input-control"
+  ],
+  "author": "Rajan Raj",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajanraj2/trackpad-toggle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rajanraj2/trackpad-toggle/issues"
+  },
+  "homepage": "https://github.com/rajanraj2/trackpad-toggle#readme",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64",
+    "x64"
+  ],
+  "preferGlobal": true
+}
