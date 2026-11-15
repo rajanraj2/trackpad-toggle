@@ -36,4 +36,4 @@ User-agent: DuckDuckBot
 Allow: /
 
 # Canonical Sitemaps & LLM context
-Sitemap: https://trackpad-toggle.rajanraj.me/sitemap.xml
+Sitemap: https://trackpad-toggle.delulu.dpdns.org/sitemap.xml
