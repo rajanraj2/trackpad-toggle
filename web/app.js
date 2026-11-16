@@ -256,7 +256,7 @@
 
       if (!hasVisitedThisSession && !isAutomated) {
         // New unique human visitor in this session -> increment counter
-        const res = await fetch('https://counterapi.com/api/trackpad-toggle.delulu.dpdns.org/view/visitors');
+        const res = await fetch('https://counterapi.com/api/trackpad-toggle-app/view/visitors');
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data.value === 'number') {
@@ -274,7 +274,7 @@
           countNumber = parseInt(cached, 10);
         } else {
           // Fetch current count via hits.sh svg badge parser
-          const hitsRes = await fetch('https://hits.sh/trackpad-toggle.delulu.dpdns.org.svg', { cache: 'no-cache' });
+          const hitsRes = await fetch('https://hits.sh/trackpad-toggle-app.svg', { cache: 'no-cache' });
           if (hitsRes.ok) {
             const svgText = await hitsRes.text();
             const match = svgText.match(/aria-label="hits:\s*([0-9,]+)"/i);
@@ -306,10 +306,10 @@
 
     // 2. Persist conversion event counters in CounterAPI (viewable via JSON API & dashboard)
     if (action === 'Download_DMG_Click') {
-      fetch('https://counterapi.com/api/trackpad-toggle.delulu.dpdns.org/click/download-dmg').catch(() => {});
+      fetch('https://counterapi.com/api/trackpad-toggle-app/click/download-dmg').catch(() => {});
     } else if (action === 'Copy_Command_Click') {
       const key = label === 'brew' ? 'copy-brew' : 'copy-npx';
-      fetch(`https://counterapi.com/api/trackpad-toggle.delulu.dpdns.org/click/${key}`).catch(() => {});
+      fetch(`https://counterapi.com/api/trackpad-toggle-app/click/${key}`).catch(() => {});
     }
 
     console.debug(`[Telemetry] ${category} -> ${action}: ${label || ''}`);

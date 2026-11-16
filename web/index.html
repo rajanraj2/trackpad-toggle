@@ -6,21 +6,40 @@
   <title>Trackpad Toggle — Disable MacBook Trackpad &amp; Keyboard for Cleaning</title>
   <meta name="description" content="Native macOS utility to disable MacBook built-in trackpad and keyboard with global shortcuts (⌃⌥⌘T and ⌃⌥⌘K). Clean your Mac with zero accidental clicks.">
   <meta name="keywords" content="disable trackpad mac, disable macbook keyboard, mac keyboard cleaner, macbook touchpad disable, trackpad toggle, clean macbook keyboard, keyboard cleaner mac, disable built-in trackpad macos, macos cleaning mode">
-  <link rel="canonical" href="https://trackpad-toggle.delulu.dpdns.org/">
+  <link rel="canonical" href="./">
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://trackpad-toggle.delulu.dpdns.org/">
+  <meta property="og:url" content="./">
   <meta property="og:title" content="Trackpad Toggle — Disable MacBook Trackpad &amp; Keyboard">
   <meta property="og:description" content="Freeze your cursor and block touchpad and keyboard input on macOS with a single global shortcut. Clean your MacBook safely.">
-  <meta property="og:image" content="https://trackpad-toggle.delulu.dpdns.org/assets/AppIcon.png">
+  <meta property="og:image" content="./assets/AppIcon.png">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://trackpad-toggle.delulu.dpdns.org/">
+  <meta name="twitter:url" content="./">
   <meta name="twitter:title" content="Trackpad Toggle — Disable MacBook Trackpad &amp; Keyboard">
   <meta name="twitter:description" content="Freeze your cursor and block touchpad and keyboard input on macOS with a single global shortcut. Clean your MacBook safely.">
-  <meta name="twitter:image" content="https://trackpad-toggle.delulu.dpdns.org/assets/AppIcon.png">
+  <meta name="twitter:image" content="./assets/AppIcon.png">
+
+  <!-- Domain-Agnostic Origin Resolver -->
+  <script>
+    (function() {
+      try {
+        const origin = window.location.origin;
+        const canonical = document.querySelector('link[rel="canonical"]');
+        if (canonical) canonical.href = origin + '/';
+        const ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) ogUrl.content = origin + '/';
+        const ogImg = document.querySelector('meta[property="og:image"]');
+        if (ogImg) ogImg.content = origin + '/assets/AppIcon.png';
+        const twUrl = document.querySelector('meta[name="twitter:url"]');
+        if (twUrl) twUrl.content = origin + '/';
+        const twImg = document.querySelector('meta[name="twitter:image"]');
+        if (twImg) twImg.content = origin + '/assets/AppIcon.png';
+      } catch (e) {}
+    })();
+  </script>
   
   <!-- LLM & AI Discovery Standard -->
   <link rel="alternate" type="text/markdown" title="LLM summary" href="/llms.txt">
@@ -42,7 +61,7 @@
           "priceCurrency": "USD"
         },
         "description": "A lightweight native macOS menu-bar utility to freeze your trackpad and keyboard with global shortcuts for safe cleaning and maintenance.",
-        "url": "https://trackpad-toggle.delulu.dpdns.org",
+        "url": "https://github.com/rajanraj2/trackpad-toggle",
         "downloadUrl": "https://github.com/rajanraj2/trackpad-toggle/releases/latest/download/TrackpadToggle.dmg",
         "author": {
           "@type": "Person",

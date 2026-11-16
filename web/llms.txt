@@ -5,8 +5,7 @@
 ## Overview
 When cleaning a MacBook keyboard or trackpad, physical pressure normally causes unintended clicks, window dismissal, or phantom keystrokes. Trackpad Toggle provides instant global keyboard shortcuts to suppress built-in input without requiring external mice or system reboots.
 
-- **Official Website**: https://trackpad-toggle.delulu.dpdns.org
-- **Source Code**: https://github.com/rajanraj2/trackpad-toggle
+- **Source Code & Releases**: https://github.com/rajanraj2/trackpad-toggle
 - **License**: MIT
 - **Supported Platforms**: macOS 14 (Sonoma), macOS 15 (Sequoia), and later on Apple Silicon (M1/M2/M3/M4/M5) and Intel Macs.
 
@@ -34,5 +33,5 @@ When cleaning a MacBook keyboard or trackpad, physical pressure normally causes 
 - **In-App Upgrades**: Direct in-place DMG updates with Homebrew Caskroom directory synchronization.
 
 ## Detailed Information
-- [Full Documentation](https://trackpad-toggle.delulu.dpdns.org/llms-full.txt): Complete technical breakdown, permission handling, and architecture details.
+- [Full Documentation](/llms-full.txt): Complete technical breakdown, permission handling, and architecture details.
 - [GitHub Repository](https://github.com/rajanraj2/trackpad-toggle): Source code, issues, and releases.
